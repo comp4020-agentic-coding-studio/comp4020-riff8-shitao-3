@@ -7,6 +7,13 @@
   const svg = document.getElementById("wall");
   const status = document.getElementById("status");
   const handColour = script.dataset.handColour;
+  // The pen picker (absent once today's mark is in). Read once a gesture
+  // starts and disabled for its length, so what a hand sees chosen is what
+  // posts; it only reopens if that gesture is cancelled or refused.
+  const tools = document.getElementById("tools");
+  const chosen = (name, fallback) =>
+    tools?.querySelector(`input[name="${name}"]:checked`)?.value ?? fallback;
+  let pen = "line";
   let canDraw = script.dataset.canDraw === "true";
   let points = [];
   let live = null;
@@ -40,10 +47,11 @@
 
   const pathFrom = (pts) => pts.map(([x, y], i) => `${i === 0 ? "M" : "L"}${x},${y}`).join(" ");
 
-  const appendStroke = (path, colour) => {
+  const appendStroke = (path, colour, markPen) => {
     const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
     p.setAttribute("d", path);
     p.setAttribute("stroke", colour);
+    p.setAttribute("class", `pen-${markPen ?? "line"}`);
     // Under this hand's own strokes, which the server paints last.
     svg.insertBefore(p, svg.querySelector(".halo, .mine"));
   };
@@ -55,11 +63,13 @@
   const beginGesture = (point) => {
     drawing = true;
     points = [point];
+    pen = chosen("pen", "line");
+    if (tools) tools.disabled = true;
     halo = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    halo.setAttribute("class", "halo");
+    halo.setAttribute("class", `halo pen-${pen}`);
     live = document.createElementNS("http://www.w3.org/2000/svg", "path");
     live.setAttribute("stroke", handColour);
-    live.setAttribute("class", "mine");
+    live.setAttribute("class", `mine pen-${pen}`);
     svg.append(halo, live);
   };
 
@@ -72,6 +82,7 @@
   const dropLive = () => {
     halo?.remove();
     live?.remove();
+    if (tools) tools.disabled = false;
   };
 
   if (canDraw) {
@@ -104,7 +115,7 @@
         const res = await fetch("/api/marks", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ path, nonce }),
+          body: JSON.stringify({ path, nonce, pen }),
         });
         if (!res.ok) {
           const text = await res.text();
@@ -177,6 +188,6 @@
       pendingNonce = null;
       return;
     }
-    appendStroke(mark.path, mark.colour);
+    appendStroke(mark.path, mark.colour, mark.pen);
   });
 })();

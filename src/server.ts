@@ -1,9 +1,10 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { readFileSync } from "node:fs";
 import { extname, join } from "node:path";
-import { addMark, allMarks, createHand, getHand, msUntilNextMark } from "./db.ts";
+import { addMark, allMarks, createHand, getHand, lastMark, msUntilNextMark } from "./db.ts";
 import { colourFor, nameFor, newHandId, parseHandCookie, setHandCookie } from "./identity.ts";
 import { readmePage, untilPhrase, wallPage } from "./pages.ts";
+import { DEFAULT_PEN, isPen } from "./pens.ts";
 
 const PORT = Number(process.env.PORT ?? 8080);
 // Fly's proxy terminates TLS and forwards plain http; FLY_APP_NAME is only
@@ -68,8 +69,13 @@ interface SseClient {
 
 const sseClients = new Set<SseClient>();
 
-function broadcastMark(mark: { path: string; colour: string; nonce?: string }): void {
-  const payload = JSON.stringify({ path: mark.path, colour: mark.colour, nonce: mark.nonce });
+function broadcastMark(mark: { path: string; colour: string; pen: string; nonce?: string }): void {
+  const payload = JSON.stringify({
+    path: mark.path,
+    colour: mark.colour,
+    pen: mark.pen,
+    nonce: mark.nonce,
+  });
   for (const client of sseClients) {
     client.res.write(`event: mark\ndata: ${payload}\n\n`);
   }
@@ -82,7 +88,7 @@ const server = createServer(async (req, res) => {
     if (req.method === "GET" && url.pathname === "/") {
       const hand = ensureHand(req, res);
       res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-      res.end(wallPage(allMarks(), hand, msUntilNextMark(hand.id)));
+      res.end(wallPage(allMarks(), hand, msUntilNextMark(hand.id), lastMark(hand.id)));
       return;
     }
 
@@ -126,10 +132,12 @@ const server = createServer(async (req, res) => {
       const raw = await readBody(req);
       let path: unknown;
       let nonce: unknown;
+      let pen: unknown;
       try {
-        const body = JSON.parse(raw) as { path?: unknown; nonce?: unknown };
+        const body = JSON.parse(raw) as { path?: unknown; nonce?: unknown; pen?: unknown };
         path = body.path;
         nonce = body.nonce;
+        pen = body.pen ?? DEFAULT_PEN;
       } catch {
         res.writeHead(400, { "Content-Type": "text/plain; charset=utf-8" });
         res.end("Malformed request.");
@@ -139,6 +147,13 @@ const server = createServer(async (req, res) => {
       if (typeof path !== "string" || !PATH_RE.test(path)) {
         res.writeHead(400, { "Content-Type": "text/plain; charset=utf-8" });
         res.end("That doesn't look like a mark.");
+        return;
+      }
+      // One of src/pens.ts's ids or nothing: a raw width or dash pattern
+      // would let a hand-rolled request draw a stroke no picker offers.
+      if (!isPen(pen)) {
+        res.writeHead(400, { "Content-Type": "text/plain; charset=utf-8" });
+        res.end("That isn't one of the wall's pens.");
         return;
       }
       // An opaque, client-chosen token so a tab can recognise its own mark
@@ -162,7 +177,7 @@ const server = createServer(async (req, res) => {
         return;
       }
 
-      const mark = addMark(hand.id, path, hand.colour);
+      const mark = addMark(hand.id, path, hand.colour, pen);
       broadcastMark({ ...mark, nonce: markNonce });
       res.writeHead(201, { "Content-Type": "text/plain; charset=utf-8" });
       res.end("ok");

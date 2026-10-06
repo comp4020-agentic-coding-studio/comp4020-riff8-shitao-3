@@ -28,20 +28,116 @@ body {
   outline-offset: 2px;
 }
 
-#wall path {
+/* A pen is a width, a cap and a dash pattern --- src/pens.ts names them and
+   the server only ever stores the name. A hand's own strokes (and their
+   halo) grow from whatever width their pen has, so "yours" stays legible
+   whichever pen drew it. */
+#wall path,
+.preview path {
   fill: none;
-  stroke-width: 4;
-  stroke-linecap: round;
+  stroke-width: var(--w, 4);
+  stroke-linecap: var(--cap, round);
   stroke-linejoin: round;
+  stroke-dasharray: var(--dash, none);
+}
+
+.pen-line {
+  --w: 4;
+}
+
+.pen-hairline {
+  --w: 1.5;
+}
+
+.pen-brush {
+  --w: 11;
+}
+
+.pen-dots {
+  --w: 7;
+  --dash: 0 15;
+}
+
+.pen-dashes {
+  --w: 4;
+  --dash: 18 12;
+  --cap: butt;
 }
 
 #wall path.mine {
-  stroke-width: 7;
+  stroke-width: calc(var(--w, 4) + 3);
 }
 
 #wall path.halo {
   stroke: Canvas;
-  stroke-width: 13;
+  stroke-width: calc(var(--w, 4) + 9);
+  stroke-dasharray: none;
+  stroke-linecap: round;
+}
+
+#tools {
+  border: none;
+  margin: 0 0 0.75rem;
+  padding: 0;
+}
+
+#tools > legend {
+  padding: 0;
+  margin-bottom: 0.25rem;
+  font-weight: 600;
+}
+
+#tools:disabled {
+  opacity: 0.6;
+}
+
+#tools fieldset {
+  border: none;
+  margin: 0;
+  padding: 0.25rem 0;
+}
+
+#tools fieldset > legend {
+  float: left;
+  width: 4rem;
+  padding: 0.35rem 0 0;
+  font-size: 0.9rem;
+}
+
+#tools .options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.5rem;
+  margin-left: 4rem;
+}
+
+.option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.15rem 0.5rem 0.15rem 0.25rem;
+  border: 1px solid transparent;
+  border-radius: 0.4rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.option:has(input:checked) {
+  border-color: currentColor;
+}
+
+.option:has(input:focus-visible) {
+  outline: 3px solid #5177aa;
+  outline-offset: 1px;
+}
+
+.preview {
+  width: 3.5rem;
+  height: 1.4rem;
+}
+
+.preview path {
+  stroke: var(--ink, currentColor);
 }
 
 main img {

@@ -11,15 +11,28 @@ import { expect, it } from "vitest";
 // stubbed since there's no server here.
 const wallSource = readFileSync("public/wall.js", "utf8");
 
+// The same shape src/pages.ts renders, cut down to what wall.js reads.
+const TOOLS = `<fieldset id="tools">
+  <fieldset>
+    <input type="radio" name="pen" value="line" checked />
+    <input type="radio" name="pen" value="dots" />
+  </fieldset>
+</fieldset>`;
+
 function buildWall({
   canDraw,
   deferFetch = false,
+  rejectWith,
+  tools = false,
 }: {
   canDraw: boolean;
   deferFetch?: boolean;
+  rejectWith?: number;
+  tools?: boolean;
 }) {
   const dom = new JSDOM(
     `<!doctype html><body>
+      ${tools ? TOOLS : ""}
       <svg id="wall" viewBox="0 0 100 100"></svg>
       <p id="status"></p>
     </body>`,
@@ -36,7 +49,7 @@ function buildWall({
     ({ left: 0, top: 0, width: 100, height: 100 }) as DOMRect;
   (svg as unknown as { setPointerCapture: (id: number) => void }).setPointerCapture = () => {};
 
-  const posted: { path: string; nonce: string }[] = [];
+  const posted: { path: string; nonce: string; pen?: string; colour?: string }[] = [];
   // deferFetch lets a test fire the SSE echo for a post while its own fetch
   // promise is still pending --- the exact ordering server.ts's comment
   // warns is possible (broadcast is written to the wire before the POST
@@ -49,7 +62,7 @@ function buildWall({
         resolveFetch = resolve;
       });
     }
-    return new Response(null, { status: 201 });
+    return new Response(null, { status: rejectWith ?? 201 });
   }) as typeof fetch;
   // wall.js opens one unconditionally on load; there's no server to answer it,
   // so tests dispatch "mark" events through this stub directly.
@@ -85,11 +98,27 @@ function buildWall({
   };
   // Flush the microtask queue fetch's promise chain runs on.
   const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
-  const emitMark = (mark: { path: string; colour: string; nonce?: string }) =>
+  const emitMark = (mark: { path: string; colour: string; pen?: string; nonce?: string }) =>
     markListener?.({ data: JSON.stringify(mark) });
   const releaseFetch = () => resolveFetch?.();
 
-  return { svg, status, posted, stroke, key, keyboardStroke, settle, emitMark, releaseFetch };
+  const toolset = window.document.getElementById("tools") as HTMLFieldSetElement | null;
+  const choose = (name: string, value: string) =>
+    (window.document.querySelector(`input[name="${name}"][value="${value}"]`) as HTMLInputElement).click();
+
+  return {
+    svg,
+    status,
+    posted,
+    stroke,
+    key,
+    keyboardStroke,
+    settle,
+    emitMark,
+    releaseFetch,
+    toolset,
+    choose,
+  };
 }
 
 it("posts one mark for one pointer gesture when a hand can draw", async () => {
@@ -225,4 +254,54 @@ it("doesn't duplicate its own mark when the SSE echo arrives before the post res
   releaseFetch();
   await settle();
   expect(svg.querySelectorAll("path:not(.halo)").length).toBe(1);
+});
+
+it("posts the pen a hand picked, and draws its live stroke with it", async () => {
+  const { svg, posted, stroke, settle, choose } = buildWall({ canDraw: true, tools: true });
+  choose("pen", "dots");
+  stroke(1, 9);
+  await settle();
+  expect(posted[0].pen).toBe("dots");
+  expect(svg.querySelector(".mine")?.classList.contains("pen-dots")).toBe(true);
+  expect(svg.querySelector(".halo")?.classList.contains("pen-dots")).toBe(true);
+});
+
+it("locks the picker the moment a gesture starts, so the pen can't change mid-stroke", async () => {
+  const { posted, key, settle, choose, toolset } = buildWall({ canDraw: true, tools: true });
+  key("Enter");
+  expect(toolset!.disabled).toBe(true);
+  choose("pen", "dots"); // a disabled radio ignores the click, as in a browser
+  key("ArrowDown");
+  key("Enter");
+  await settle();
+  expect(posted[0].pen).toBe("line");
+  expect(toolset!.disabled).toBe(true); // and stays locked once the mark is in
+});
+
+it("reopens the picker when a gesture is cancelled or refused", async () => {
+  const cancelled = buildWall({ canDraw: true, tools: true });
+  cancelled.key("Enter");
+  cancelled.key("Escape");
+  expect(cancelled.toolset!.disabled).toBe(false);
+
+  const refused = buildWall({ canDraw: true, tools: true, rejectWith: 429 });
+  refused.stroke(1, 9);
+  await refused.settle();
+  expect(refused.toolset!.disabled).toBe(false);
+});
+
+it("a keyboard-only hand can pick a pen and draw with it", async () => {
+  // Arrow-key movement between radios is the browser's, not wall.js's, and
+  // jsdom doesn't implement it; selecting the radio is what that does.
+  const { posted, keyboardStroke, settle, choose } = buildWall({ canDraw: true, tools: true });
+  choose("pen", "dots");
+  keyboardStroke();
+  await settle();
+  expect(posted[0].pen).toBe("dots");
+});
+
+it("draws another hand's live mark with that hand's pen", () => {
+  const { svg, emitMark } = buildWall({ canDraw: false });
+  emitMark({ path: "M1,1 L5,5", colour: "#abcdef", pen: "dashes", nonce: "theirs" });
+  expect(svg.querySelector("path")?.classList.contains("pen-dashes")).toBe(true);
 });

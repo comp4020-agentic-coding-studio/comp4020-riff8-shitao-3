@@ -1,5 +1,6 @@
 import { marked } from "marked";
 import type { Mark } from "./db.ts";
+import { DEFAULT_PEN, PENS, type Pen } from "./pens.ts";
 
 const escape = (s: string): string =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -25,10 +26,31 @@ export function untilPhrase(ms: number): string {
   return ms <= 3_600_000 ? "within the hour" : `in about ${hours} hours`;
 }
 
+// One sample stroke per pen, drawn with that pen's own `.pen-<id>` rule, so
+// the picker shows a hand exactly what it would put on the wall.
+const PREVIEW_PATH = "M6,22 C18,4 30,30 44,14 S62,6 74,18";
+
+function penPicker(selected: Pen): string {
+  const options = PENS.map(
+    (p) => `<label class="option">
+          <input type="radio" name="pen" value="${p.id}"${p.id === selected ? " checked" : ""} />
+          <svg class="preview" viewBox="0 0 80 32" aria-hidden="true"><path class="pen-${p.id}" d="${PREVIEW_PATH}" /></svg>
+          <span>${escape(p.label)}</span>
+        </label>`,
+  ).join("\n        ");
+  return `<fieldset class="pens">
+        <legend>Pen</legend>
+        <div class="options">
+        ${options}
+        </div>
+      </fieldset>`;
+}
+
 export function wallPage(
   marks: Mark[],
   hand: { id: string; colour: string },
   msUntilNextMark: number,
+  last?: Mark,
 ): string {
   const alreadyMarked = msUntilNextMark > 0;
   // Ten colours across every hand means colour alone can't tell a returning
@@ -40,10 +62,10 @@ export function wallPage(
   const strokes = [
     ...marks
       .filter((m) => m.hand_id !== hand.id)
-      .map((m) => `<path d="${escape(m.path)}" stroke="${escape(m.colour)}" />`),
+      .map((m) => `<path d="${escape(m.path)}" stroke="${escape(m.colour)}" class="pen-${escape(m.pen)}" />`),
     ...own.flatMap((m) => [
-      `<path d="${escape(m.path)}" class="halo" />`,
-      `<path d="${escape(m.path)}" stroke="${escape(m.colour)}" class="mine" />`,
+      `<path d="${escape(m.path)}" class="halo pen-${escape(m.pen)}" />`,
+      `<path d="${escape(m.path)}" stroke="${escape(m.colour)}" class="mine pen-${escape(m.pen)}" />`,
     ]),
   ].join("\n      ");
   const ownCount = own.length;
@@ -63,6 +85,14 @@ export function wallPage(
       <h1>Trace</h1>
       <p>One wall. One mark each, once a day. Nothing else.</p>
       <p class="why">A mark here is a gesture, not a post: no words, no likes, nobody to follow. The wall grows by care, not engagement, one stroke per hand per day, and nothing on it ever resets.</p>
+      ${
+        alreadyMarked
+          ? ""
+          : `<fieldset id="tools" style="--ink:${escape(handColour)}">
+        <legend>Today's mark: pick a pen, then draw</legend>
+        ${penPicker(last?.pen ?? DEFAULT_PEN)}
+      </fieldset>`
+      }
       <svg id="wall" viewBox="0 0 1000 600" ${svgAttrs}>
       ${strokes}
       </svg>

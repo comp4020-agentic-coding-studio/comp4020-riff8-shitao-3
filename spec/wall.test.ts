@@ -1,6 +1,8 @@
 import { JSDOM } from "jsdom";
 import { expect, inject, it } from "vitest";
 import net from "node:net";
+import { readFileSync } from "node:fs";
+import { PENS } from "../src/pens.ts";
 
 // Trace's own promises, from README.md's "what's enforced" list: a
 // first-time visitor gets a hand, a mark they draw shows up and survives a
@@ -151,6 +153,52 @@ it("refuses a same-day double mark even when one request's body is slow to arriv
   expect(await statusA).toBe("429");
 });
 
+it("draws a mark with the pen its hand chose, for every hand looking", async () => {
+  const mine = cookieFrom(await fetch(new URL("/", baseUrl)));
+  const other = cookieFrom(await fetch(new URL("/", baseUrl)));
+  const path = `M${Date.now() % 100_000},31 L32,33 L34,35`;
+  const post = await fetch(new URL("/api/marks", baseUrl), {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Cookie: mine },
+    body: JSON.stringify({ path, pen: "dots" }),
+  });
+  expect(post.status).toBe(201);
+
+  const html = await (await fetch(new URL("/", baseUrl), { headers: { Cookie: other } })).text();
+  const stroke = [...new JSDOM(html).window.document.querySelectorAll("#wall path")].find(
+    (p) => p.getAttribute("d") === path,
+  );
+  expect(stroke?.classList.contains("pen-dots")).toBe(true);
+});
+
+it("refuses a pen that isn't one of the wall's own, including a raw stroke style", async () => {
+  for (const pen of ["huge", "stroke-width:999", 12, { width: 40 }]) {
+    const cookie = cookieFrom(await fetch(new URL("/", baseUrl)));
+    const res = await fetch(new URL("/api/marks", baseUrl), {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Cookie: cookie },
+      body: JSON.stringify({ path: "M1,2 L3,4", pen }),
+    });
+    expect(res.status, JSON.stringify(pen)).toBe(400);
+  }
+});
+
+it("offers every pen as a plain radio button, ahead of the wall in tab order", async () => {
+  const doc = new JSDOM(await (await fetch(new URL("/", baseUrl))).text()).window.document;
+  const radios = [...doc.querySelectorAll<HTMLInputElement>('#tools input[type=radio][name="pen"]')];
+  expect(radios.map((r) => r.value)).toEqual(PENS.map((p) => p.id));
+  expect(radios.filter((r) => r.checked)).toHaveLength(1);
+  const wall = doc.getElementById("wall")!;
+  expect(radios[0].compareDocumentPosition(wall) & 4).toBeTruthy(); // DOCUMENT_POSITION_FOLLOWING
+});
+
+it("gives every pen a look in style.css, so none renders as a bare 1px line", () => {
+  const css = readFileSync("public/style.css", "utf8");
+  for (const { id } of PENS) {
+    expect(css, `no .pen-${id} rule`).toMatch(new RegExp(`\\.pen-${id}\\s*\\{[^}]*--w:`));
+  }
+});
+
 it("rejects a mark that isn't a plain stroke path", async () => {
   const first = await fetch(new URL("/", baseUrl));
   const cookie = cookieFrom(first);
@@ -174,7 +222,7 @@ it("broadcasts a new mark over /api/marks/stream within a second", async () => {
   const decoder = new TextDecoder();
   let buffered = "";
 
-  const nextMarkEvent = (): Promise<{ path: string; colour: string }> =>
+  const nextMarkEvent = (): Promise<{ path: string; colour: string; pen: string }> =>
     (async () => {
       for (;;) {
         const boundary = buffered.indexOf("\n\n");
@@ -207,11 +255,12 @@ it("broadcasts a new mark over /api/marks/stream within a second", async () => {
     fetch(new URL("/api/marks", baseUrl), {
       method: "POST",
       headers: { "Content-Type": "application/json", Cookie: cookie },
-      body: JSON.stringify({ path }),
+      body: JSON.stringify({ path, pen: "brush" }),
     }).then((res) => expect(res.status).toBe(201)),
   ]);
 
   expect(event.path).toBe(path);
+  expect(event.pen).toBe("brush");
   controller.abort();
 });
 
