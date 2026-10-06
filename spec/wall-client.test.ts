@@ -13,6 +13,7 @@ const wallSource = readFileSync("public/wall.js", "utf8");
 
 // The same shape src/pages.ts renders, cut down to what wall.js reads.
 const TOOLS = `<fieldset id="tools">
+  <legend>Today's mark: pick a pen and a colour, then draw</legend>
   <fieldset>
     <input type="radio" name="pen" value="line" checked />
     <input type="radio" name="pen" value="dots" />
@@ -283,6 +284,8 @@ it("locks the picker the moment a gesture starts, so nothing changes mid-stroke"
   await settle();
   expect(posted[0]).toMatchObject({ pen: "line", colour: "#5177aa" });
   expect(toolset!.disabled).toBe(true); // and stays locked once the mark is in
+  // ...without still telling the hand to draw, which it no longer can.
+  expect(toolset!.querySelector("legend")?.textContent).not.toMatch(/then draw/);
 });
 
 it("reopens the picker when a gesture is cancelled or refused", async () => {

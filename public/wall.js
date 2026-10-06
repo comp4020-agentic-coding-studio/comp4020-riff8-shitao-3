@@ -131,6 +131,10 @@
           return;
         }
         canDraw = false;
+        // The picker stays where it is, locked, so the wall doesn't jump
+        // under the stroke just drawn; it just stops asking for one.
+        const legend = tools?.querySelector("legend");
+        if (legend) legend.textContent = "Today's mark is in, drawn with this pen and colour.";
         status.textContent =
           "Your mark is on the wall: the stroke on top, ringed by a clear band. You can add another in 24 hours.";
       } catch {
