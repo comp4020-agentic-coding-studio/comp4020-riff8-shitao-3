@@ -23,15 +23,40 @@ Trace can't be single-tenant the way Balkan means (a marking crawler and a
 stranger both need to reach it at the same URL), but I took the same stance
 on what the *inside* of the app should feel like: nothing here is trying to
 grow. There's no way to invite anyone, follow anyone, or find out who drew
-which mark unless they tell you. A hand is a cookie and a colour, not a
-profile. You get one mark a day, the same way you'd only add one line to a
+which mark unless they tell you. A hand is a cookie, not a profile. You get one mark a day, the same way you'd only add one line to a
 guestbook --- not because the server can't take more, but because a wall
 that everyone can flood stops being a wall anyone wants to add to.
+
+## Choosing how today's mark looks
+
+Before a hand draws, it picks a pen and a colour for that one mark: five
+pens (line, hairline, brush, dots, dashes) and the same ten colours the
+wall has always handed out. The choice is the only thing a hand says about
+a mark besides the gesture itself, so it gets the same treatment as the
+gesture: a fixed vocabulary, not a free one. There's no colour wheel and no
+width slider. Every colour has already been checked against both page
+backgrounds, and no pen changes opacity, so nothing a hand picks can draw a
+mark the next visitor can't see. A pen is a name the server stores, not a
+width it trusts: what "brush" looks like lives in the stylesheet.
+
+The widths are deliberately close together. On a scratch wall of 150
+marks, a much broader brush read as the whole wall and the hairlines
+vanished under it, which is just engagement by another means: the loudest
+pen buying the most wall. Now a brush is about twice a line, and a hairline
+half.
+
+A new hand's picker starts on the colour it was given when its cookie was
+minted, so not choosing is still a choice the wall makes for you, as
+before; once a hand has drawn, it starts from whatever it used last. The
+picker locks the moment a gesture starts, so the mark you see while drawing
+is the one that posts.
 
 ## What I chose not to build
 
 No text. No titles, no captions, no usernames you type in --- a mark is a
 gesture, not a post, and a gesture can't be unkind in the way a sentence can.
+The wall says this about itself in a line above the drawing, so nobody has
+to come here to find out.
 No accounts: identity is a browser cookie, so "coming back" means the same
 browser, not a login you can carry between devices (yet --- that trade-off
 is worth revisiting once more than one hand at a time is actually drawing on
@@ -45,8 +70,14 @@ gets a hand (a cookie, minted once); a mark they draw shows up on the wall
 and is still there on a completely fresh request; a hand can't draw a second
 mark until 24 hours after its last, measured from the mark rather than
 from midnight, since UTC midnight lands at 11am in Canberra and any
-calendar day would be somebody's mid-afternoon; a mark broadcasts over `/api/marks/stream`
-within a second of landing; the page ships no third-party script or
+calendar day would be somebody's mid-afternoon; a mark's pen has to be one
+of the five names in `src/pens.ts` and its colour one of the palette's ten,
+or the server refuses it, whatever a hand-built request sends; the picker
+offers exactly that palette; a database written before marks had pens
+opens under the new code with every old mark intact (`spec/migrate.test.ts`
+builds one in the old shape), since a redeploy reuses the volume and
+`CREATE TABLE IF NOT EXISTS` never adds a column; a mark broadcasts over `/api/marks/stream`
+within a second of landing, pen and colour included; the page ships no third-party script or
 tracking request; every hand colour reads at WCAG 1.4.11's 3:1 non-text
 contrast minimum against both a white and a black background, since
 `color-scheme: light dark` means a stroke has to stay visible under
@@ -56,7 +87,9 @@ whether "no login, ever" survives contact with people who want their marks
 back on a new phone --- those are judgement calls, not tests, and the crit is
 where I find out if they were the right ones.
 
-Nothing about "one hand, one mark" should mean one *input device*. Focusing the wall and pressing
+Nothing about "one hand, one mark" should mean one *input device*. The pen
+and colour choices are plain radio buttons, so Tab reaches each group and
+the arrow keys move through it, with nothing in `wall.js` to break. Focusing the wall and pressing
 Enter starts a mark at its centre, the arrow keys extend it a step at a
 time, and Enter again hands off to the exact same submit path a pointer
 gesture uses --- same nonce, same one-mark-a-day check, same echo handling.
@@ -65,8 +98,9 @@ pointer path: real `KeyboardEvent`s against the real `public/wall.js`, not a
 description of what it should do.
 
 Coming back has to mean finding *your* trace, not just a trace. Ten
-colours shared across every hand can't do that on their own, so a hand's own
-strokes render thicker and on top of everyone else's, cut out by a thin
+colours and five pens shared across every hand, and chosen afresh each
+day, can't do that on their own, so a hand's own strokes render a little
+thicker than their pen draws for anyone else, and on top of everyone else's, cut out by a thin
 band of background so a busy wall's later marks can't bury them, and only
 to that hand --- the server knows which
 marks a cookie drew, but never sends a hand id to the page, so nobody else

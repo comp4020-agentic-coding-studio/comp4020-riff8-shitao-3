@@ -82,3 +82,68 @@ said its hand colours were "not tuned for contrast," and nothing tuned them.
 Five of ten failed WCAG's 3:1 non-text minimum against white or black; they
 were retuned and `spec/contrast.test.ts` now reads the palette from source
 ([`de8164a`](https://github.com/comp4020-agentic-coding-studio/comp4020-final-shitao/commit/de8164a)).
+
+## Decision record: a pen and a colour per mark (riff 8)
+
+**Context.** A pod's brief for this riff asked for three things on top of
+the crit-8 app: say on the wall what it means, let a hand choose a pen and
+a colour for its daily mark, and get the schema change onto an existing
+volume safely. Every rule in `CLAUDE.md` still held: no text, no accounts,
+the one-mark limit on the server, broadcast after persistence.
+
+**Decision.** The wall now carries one line, condensed from this README,
+above the drawing
+([`e7eaef0`](https://github.com/comp4020-agentic-coding-studio/comp4020-riff8-shitao-3/commit/e7eaef0)).
+A hand picks one of five pens and one of the ten palette colours before it
+draws. Both are plain radio buttons, both are validated on the server
+against fixed lists (`src/pens.ts`, `identity.ts`'s `COLOURS`), and a pen
+is stored as a name whose look lives only in `style.css`
+([`6a356c7`](https://github.com/comp4020-agentic-coding-studio/comp4020-riff8-shitao-3/commit/6a356c7),
+[`0377d0b`](https://github.com/comp4020-agentic-coding-studio/comp4020-riff8-shitao-3/commit/0377d0b)).
+`colourFor`'s hashed colour **coexists** with the choice, as the default: a
+new hand's picker starts on it, and a hand that has drawn starts on what it
+used last. Replacing it would have made every first visit open on an
+arbitrary first swatch, and it still serves as the fallback for a request
+that names no colour, so a bare `curl` keeps working.
+
+**Alternatives I rejected.** A free colour input or width slider, because
+the palette's 3:1 contrast against both backgrounds is a property of the
+list, not of whatever a hand types; translucent pens, for the same reason.
+Hiding the hashed colour entirely, for the reason above. A custom swatch
+widget with its own key handling, because native radios already give Tab
+between groups and arrows within one, and `wall.js` can't break what it
+doesn't implement.
+
+**The migration.** `CREATE TABLE IF NOT EXISTS` never touches the table
+already on the volume, so `db.ts` reads `PRAGMA table_info(marks)` and adds
+`pen` with a `'line'` default when it's missing
+([`c48bd57`](https://github.com/comp4020-agentic-coding-studio/comp4020-riff8-shitao-3/commit/c48bd57)).
+`spec/migrate.test.ts` builds a database in the old shape, opens it, and
+opens it again. Before changing anything I also ran the unchanged app's own
+test suite against a scratch database to get one the old code genuinely
+wrote; the new server opened it with all six marks intact, as `line`.
+
+**What 150 marks showed.** I seeded a scratch wall with 150 marks, three of
+every pen and colour pairing, and looked at it in light and dark at both
+viewports. It still read as one wall, but not an even one: the brush, at 11
+units wide, was a fifth of the marks and most of the picture, and hairlines
+at 1.5 disappeared under it. A pen that buys more wall is the engagement the
+README argues against, so the range narrowed to brush 7.5, hairline 2
+([`8359fb7`](https://github.com/comp4020-agentic-coding-studio/comp4020-riff8-shitao-3/commit/8359fb7)).
+A hand's own mark used to be "the thicker stroke"; next to a brush, a
+hairline that's yours isn't thicker, so own marks now grow from their own
+pen's width and the copy calls them the stroke on top, ringed by a clear
+band. I checked a hairline of my own on the dense wall in dark mode, and
+the ring was what made it findable.
+
+**Drawing my own mark.** Last, I drew one through the real flow on that
+dense wall: fresh cookie, Brush and Plum picked in the browser, then one
+continuous pointer gesture of 115 points, a ridge of peaks climbing into a
+spiral sun. A second browser session watching the same wall got it live,
+pen and colour included. It caught one thing no test had looked for:
+after the mark landed, the greyed-out picker still said "pick a pen and a
+colour, then draw", right above a status line saying the mark was in. The
+legend now says what the mark was drawn with instead
+([`f2ccd63`](https://github.com/comp4020-agentic-coding-studio/comp4020-riff8-shitao-3/commit/f2ccd63)).
+I kept the picker on screen rather than hiding it, because hiding it would
+jump the wall up under the stroke the hand had just drawn.
