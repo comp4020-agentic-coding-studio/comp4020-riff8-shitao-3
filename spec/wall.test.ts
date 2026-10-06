@@ -3,6 +3,8 @@ import { expect, inject, it } from "vitest";
 import net from "node:net";
 import { readFileSync } from "node:fs";
 import { PENS } from "../src/pens.ts";
+import { COLOURS } from "../src/identity.ts";
+import { wallPage } from "../src/pages.ts";
 
 // Trace's own promises, from README.md's "what's enforced" list: a
 // first-time visitor gets a hand, a mark they draw shows up and survives a
@@ -153,14 +155,14 @@ it("refuses a same-day double mark even when one request's body is slow to arriv
   expect(await statusA).toBe("429");
 });
 
-it("draws a mark with the pen its hand chose, for every hand looking", async () => {
+it("draws a mark with the pen and colour its hand chose, for every hand looking", async () => {
   const mine = cookieFrom(await fetch(new URL("/", baseUrl)));
   const other = cookieFrom(await fetch(new URL("/", baseUrl)));
   const path = `M${Date.now() % 100_000},31 L32,33 L34,35`;
   const post = await fetch(new URL("/api/marks", baseUrl), {
     method: "POST",
     headers: { "Content-Type": "application/json", Cookie: mine },
-    body: JSON.stringify({ path, pen: "dots" }),
+    body: JSON.stringify({ path, pen: "dots", colour: "#2a9d8f" }),
   });
   expect(post.status).toBe(201);
 
@@ -169,6 +171,68 @@ it("draws a mark with the pen its hand chose, for every hand looking", async () 
     (p) => p.getAttribute("d") === path,
   );
   expect(stroke?.classList.contains("pen-dots")).toBe(true);
+  expect(stroke?.getAttribute("stroke")).toBe("#2a9d8f");
+});
+
+it("refuses a colour that isn't in the wall's palette", async () => {
+  for (const colour of ["#ffff00", "red", "url(#x)", 0xcc4a28]) {
+    const cookie = cookieFrom(await fetch(new URL("/", baseUrl)));
+    const res = await fetch(new URL("/api/marks", baseUrl), {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Cookie: cookie },
+      body: JSON.stringify({ path: "M1,2 L3,4", colour }),
+    });
+    expect(res.status, JSON.stringify(colour)).toBe(400);
+  }
+});
+
+it("offers exactly the contrast-checked palette, starting on the hand's own colour", async () => {
+  // spec/contrast.test.ts checks identity.ts's COLOURS; this checks they're
+  // what the picker actually serves, so the two can't drift apart.
+  const doc = new JSDOM(await (await fetch(new URL("/", baseUrl))).text()).window.document;
+  const radios = [
+    ...doc.querySelectorAll<HTMLInputElement>('#tools input[type=radio][name="colour"]'),
+  ];
+  expect(radios.map((r) => r.value)).toEqual(COLOURS.map((c) => c.hex));
+  const checked = radios.filter((r) => r.checked);
+  expect(checked).toHaveLength(1);
+  expect(doc.querySelector("script[data-hand-colour]")?.getAttribute("data-hand-colour")).toBe(
+    checked[0].value,
+  );
+  // Each swatch has a name a screen reader can say, not just a fill.
+  for (const radio of radios) {
+    expect(radio.closest("label")?.textContent?.trim()).toBeTruthy();
+  }
+});
+
+it("starts a returning hand's picker on the pen and colour it drew with last", () => {
+  // Waiting out 24 hours over HTTP isn't possible, but wallPage is a plain
+  // function of what the server read: hand it a mark from yesterday.
+  const hand = { id: "back", colour: "#5177aa" };
+  const yesterday = {
+    id: 1,
+    hand_id: "back",
+    path: "M1,1 L2,2",
+    colour: "#6d597a",
+    pen: "hairline" as const,
+    created_at: 0,
+  };
+  const checked = (html: string, name: string) =>
+    new JSDOM(html).window.document.querySelector<HTMLInputElement>(
+      `#tools input[name="${name}"]:checked`,
+    )?.value;
+
+  const returning = wallPage([yesterday], hand, 0, yesterday);
+  expect(checked(returning, "pen")).toBe("hairline");
+  expect(checked(returning, "colour")).toBe("#6d597a");
+
+  const first = wallPage([], hand, 0);
+  expect(checked(first, "pen")).toBe("line");
+  expect(checked(first, "colour")).toBe("#5177aa");
+
+  // Minted before the palette was retuned: its colour is no longer offered.
+  const stale = wallPage([], { id: "old", colour: "#3d5a80" }, 0);
+  expect(checked(stale, "colour")).toBe(COLOURS[0].hex);
 });
 
 it("refuses a pen that isn't one of the wall's own, including a raw stroke style", async () => {

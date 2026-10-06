@@ -2,7 +2,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { readFileSync } from "node:fs";
 import { extname, join } from "node:path";
 import { addMark, allMarks, createHand, getHand, lastMark, msUntilNextMark } from "./db.ts";
-import { colourFor, nameFor, newHandId, parseHandCookie, setHandCookie } from "./identity.ts";
+import { colourFor, isPaletteColour, nameFor, newHandId, parseHandCookie, setHandCookie } from "./identity.ts";
 import { readmePage, untilPhrase, wallPage } from "./pages.ts";
 import { DEFAULT_PEN, isPen } from "./pens.ts";
 
@@ -133,11 +133,18 @@ const server = createServer(async (req, res) => {
       let path: unknown;
       let nonce: unknown;
       let pen: unknown;
+      let colour: unknown;
       try {
-        const body = JSON.parse(raw) as { path?: unknown; nonce?: unknown; pen?: unknown };
+        const body = JSON.parse(raw) as {
+          path?: unknown;
+          nonce?: unknown;
+          pen?: unknown;
+          colour?: unknown;
+        };
         path = body.path;
         nonce = body.nonce;
         pen = body.pen ?? DEFAULT_PEN;
+        colour = body.colour ?? hand.colour;
       } catch {
         res.writeHead(400, { "Content-Type": "text/plain; charset=utf-8" });
         res.end("Malformed request.");
@@ -154,6 +161,14 @@ const server = createServer(async (req, res) => {
       if (!isPen(pen)) {
         res.writeHead(400, { "Content-Type": "text/plain; charset=utf-8" });
         res.end("That isn't one of the wall's pens.");
+        return;
+      }
+      // Likewise only the palette identity.ts has checked for contrast. A
+      // request that names no colour draws in the hand's own, as it always
+      // did, even if that predates the palette's retuning.
+      if (colour !== hand.colour && !isPaletteColour(colour)) {
+        res.writeHead(400, { "Content-Type": "text/plain; charset=utf-8" });
+        res.end("That isn't one of the wall's colours.");
         return;
       }
       // An opaque, client-chosen token so a tab can recognise its own mark
@@ -177,7 +192,7 @@ const server = createServer(async (req, res) => {
         return;
       }
 
-      const mark = addMark(hand.id, path, hand.colour, pen);
+      const mark = addMark(hand.id, path, colour, pen);
       broadcastMark({ ...mark, nonce: markNonce });
       res.writeHead(201, { "Content-Type": "text/plain; charset=utf-8" });
       res.end("ok");

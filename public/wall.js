@@ -7,13 +7,18 @@
   const svg = document.getElementById("wall");
   const status = document.getElementById("status");
   const handColour = script.dataset.handColour;
-  // The pen picker (absent once today's mark is in). Read once a gesture
+  // The pen and colour picker (absent once today's mark is in). Read once a gesture
   // starts and disabled for its length, so what a hand sees chosen is what
   // posts; it only reopens if that gesture is cancelled or refused.
   const tools = document.getElementById("tools");
   const chosen = (name, fallback) =>
     tools?.querySelector(`input[name="${name}"]:checked`)?.value ?? fallback;
   let pen = "line";
+  let colour = handColour;
+  // The pen previews draw in whichever colour is picked.
+  tools?.addEventListener("change", () => {
+    tools.style.setProperty("--ink", chosen("colour", handColour));
+  });
   let canDraw = script.dataset.canDraw === "true";
   let points = [];
   let live = null;
@@ -64,11 +69,12 @@
     drawing = true;
     points = [point];
     pen = chosen("pen", "line");
+    colour = chosen("colour", handColour);
     if (tools) tools.disabled = true;
     halo = document.createElementNS("http://www.w3.org/2000/svg", "path");
     halo.setAttribute("class", `halo pen-${pen}`);
     live = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    live.setAttribute("stroke", handColour);
+    live.setAttribute("stroke", colour);
     live.setAttribute("class", `mine pen-${pen}`);
     svg.append(halo, live);
   };
@@ -115,7 +121,7 @@
         const res = await fetch("/api/marks", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ path, nonce, pen }),
+          body: JSON.stringify({ path, nonce, pen, colour }),
         });
         if (!res.ok) {
           const text = await res.text();
@@ -126,7 +132,7 @@
         }
         canDraw = false;
         status.textContent =
-          "Your mark is on the wall: the thicker stroke, on top. You can add another in 24 hours.";
+          "Your mark is on the wall: the stroke on top, ringed by a clear band. You can add another in 24 hours.";
       } catch {
         status.textContent = "Couldn't reach the wall --- try again.";
         dropLive();

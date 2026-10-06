@@ -131,6 +131,38 @@ body {
   outline-offset: 1px;
 }
 
+.chip {
+  display: block;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+}
+
+.swatch input {
+  /* The chip is the control's face; the radio stays for focus, keyboard
+     and screen readers, just not on screen. */
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.swatch {
+  position: relative;
+  padding: 0.2rem;
+  border-width: 2px;
+  border-radius: 50%;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 .preview {
   width: 3.5rem;
   height: 1.4rem;

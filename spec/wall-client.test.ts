@@ -17,6 +17,10 @@ const TOOLS = `<fieldset id="tools">
     <input type="radio" name="pen" value="line" checked />
     <input type="radio" name="pen" value="dots" />
   </fieldset>
+  <fieldset>
+    <input type="radio" name="colour" value="#5177aa" checked />
+    <input type="radio" name="colour" value="#2a9d8f" />
+  </fieldset>
 </fieldset>`;
 
 function buildWall({
@@ -136,7 +140,7 @@ it("tells a hand which stroke is theirs the moment its first mark lands", async 
   const { status, stroke, settle } = buildWall({ canDraw: true });
   stroke(1, 9);
   await settle();
-  expect(status.textContent).toContain("the thicker stroke");
+  expect(status.textContent).toContain("the stroke on top");
 });
 
 it("never attaches drawing listeners at all when canDraw starts false", async () => {
@@ -256,25 +260,28 @@ it("doesn't duplicate its own mark when the SSE echo arrives before the post res
   expect(svg.querySelectorAll("path:not(.halo)").length).toBe(1);
 });
 
-it("posts the pen a hand picked, and draws its live stroke with it", async () => {
+it("posts the pen and colour a hand picked, and draws its live stroke with them", async () => {
   const { svg, posted, stroke, settle, choose } = buildWall({ canDraw: true, tools: true });
   choose("pen", "dots");
+  choose("colour", "#2a9d8f");
   stroke(1, 9);
   await settle();
-  expect(posted[0].pen).toBe("dots");
+  expect(posted[0]).toMatchObject({ pen: "dots", colour: "#2a9d8f" });
+  expect(svg.querySelector(".mine")?.getAttribute("stroke")).toBe("#2a9d8f");
   expect(svg.querySelector(".mine")?.classList.contains("pen-dots")).toBe(true);
   expect(svg.querySelector(".halo")?.classList.contains("pen-dots")).toBe(true);
 });
 
-it("locks the picker the moment a gesture starts, so the pen can't change mid-stroke", async () => {
+it("locks the picker the moment a gesture starts, so nothing changes mid-stroke", async () => {
   const { posted, key, settle, choose, toolset } = buildWall({ canDraw: true, tools: true });
   key("Enter");
   expect(toolset!.disabled).toBe(true);
   choose("pen", "dots"); // a disabled radio ignores the click, as in a browser
+  choose("colour", "#2a9d8f");
   key("ArrowDown");
   key("Enter");
   await settle();
-  expect(posted[0].pen).toBe("line");
+  expect(posted[0]).toMatchObject({ pen: "line", colour: "#5177aa" });
   expect(toolset!.disabled).toBe(true); // and stays locked once the mark is in
 });
 
@@ -290,14 +297,15 @@ it("reopens the picker when a gesture is cancelled or refused", async () => {
   expect(refused.toolset!.disabled).toBe(false);
 });
 
-it("a keyboard-only hand can pick a pen and draw with it", async () => {
+it("a keyboard-only hand can pick a pen and colour and draw with them", async () => {
   // Arrow-key movement between radios is the browser's, not wall.js's, and
   // jsdom doesn't implement it; selecting the radio is what that does.
   const { posted, keyboardStroke, settle, choose } = buildWall({ canDraw: true, tools: true });
   choose("pen", "dots");
+  choose("colour", "#2a9d8f");
   keyboardStroke();
   await settle();
-  expect(posted[0].pen).toBe("dots");
+  expect(posted[0]).toMatchObject({ pen: "dots", colour: "#2a9d8f" });
 });
 
 it("draws another hand's live mark with that hand's pen", () => {

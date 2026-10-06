@@ -26,24 +26,30 @@ const NOUNS = [
   "harbour",
   "orchard",
 ];
-// Distinct hues, each lightness-adjusted (hue/saturation kept) so every
-// colour clears WCAG 1.4.11's 3:1 non-text contrast against *both* a white
-// and a black background --- `color-scheme: light dark` means a mark's
-// stroke has to read against either, depending on the visitor's own system
-// preference, not just the one a screenshot happens to be taken against.
+// The wall's whole palette: what colourFor assigns a new hand, and the only
+// colours a hand can pick for a mark (server.ts refuses any other). Distinct
+// hues, each lightness-adjusted (hue/saturation kept) so every colour clears
+// WCAG 1.4.11's 3:1 non-text contrast against *both* a white and a black
+// background --- `color-scheme: light dark` means a mark's stroke has to
+// read against either, depending on the visitor's own system preference,
+// not just the one a screenshot happens to be taken against.
 // `spec/contrast.test.ts` checks this against the literal values below.
-const COLOURS = [
-  "#cc4a28",
-  "#5177aa",
-  "#4e8067",
-  "#a06a13",
-  "#9d4edd",
-  "#457b9d",
-  "#e63946",
-  "#2a9d8f",
-  "#bb5a0d",
-  "#6d597a",
+export const COLOURS = [
+  { hex: "#cc4a28", name: "Brick" },
+  { hex: "#5177aa", name: "Slate" },
+  { hex: "#4e8067", name: "Fern" },
+  { hex: "#a06a13", name: "Ochre" },
+  { hex: "#9d4edd", name: "Violet" },
+  { hex: "#457b9d", name: "Steel" },
+  { hex: "#e63946", name: "Poppy" },
+  { hex: "#2a9d8f", name: "Teal" },
+  { hex: "#bb5a0d", name: "Rust" },
+  { hex: "#6d597a", name: "Plum" },
 ];
+
+export function isPaletteColour(value: unknown): value is string {
+  return COLOURS.some((c) => c.hex === value);
+}
 
 function pick<T>(list: T[], seed: number): T {
   return list[seed % list.length];
@@ -62,7 +68,7 @@ export function nameFor(id: string): string {
 export function colourFor(id: string): string {
   let hash = 0;
   for (const ch of id) hash = (hash * 17 + ch.charCodeAt(0)) >>> 0;
-  return pick(COLOURS, hash >>> 4);
+  return pick(COLOURS, hash >>> 4).hex;
 }
 
 const COOKIE_NAME = "hand";

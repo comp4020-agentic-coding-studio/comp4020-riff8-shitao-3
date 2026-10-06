@@ -1,5 +1,6 @@
 import { marked } from "marked";
 import type { Mark } from "./db.ts";
+import { COLOURS, isPaletteColour } from "./identity.ts";
 import { DEFAULT_PEN, PENS, type Pen } from "./pens.ts";
 
 const escape = (s: string): string =>
@@ -46,6 +47,22 @@ function penPicker(selected: Pen): string {
       </fieldset>`;
 }
 
+function colourPicker(selected: string): string {
+  const options = COLOURS.map(
+    (c) => `<label class="option swatch" title="${c.name}">
+          <input type="radio" name="colour" value="${c.hex}"${c.hex === selected ? " checked" : ""} />
+          <span class="chip" style="background:${c.hex}"></span>
+          <span class="visually-hidden">${escape(c.name)}</span>
+        </label>`,
+  ).join("\n        ");
+  return `<fieldset class="colours">
+        <legend>Colour</legend>
+        <div class="options">
+        ${options}
+        </div>
+      </fieldset>`;
+}
+
 export function wallPage(
   marks: Mark[],
   hand: { id: string; colour: string },
@@ -53,8 +70,8 @@ export function wallPage(
   last?: Mark,
 ): string {
   const alreadyMarked = msUntilNextMark > 0;
-  // Ten colours across every hand means colour alone can't tell a returning
-  // hand which strokes are theirs; `mine` is only ever rendered to the hand
+  // Colours and pens are shared across every hand, so neither can tell a
+  // returning hand which strokes are theirs; `mine` is only ever rendered to the hand
   // that drew it, and never leaves the server as a hand id. A hand's own
   // strokes are painted last, each over a background-coloured halo, so a
   // busy wall's later marks can't bury them.
@@ -69,7 +86,10 @@ export function wallPage(
     ]),
   ].join("\n      ");
   const ownCount = own.length;
-  const handColour = hand.colour;
+  // A hand starts from what it drew with last time, else the colour it was
+  // given when its cookie was minted. A hand minted before the palette was
+  // retuned can hold a colour no longer offered; it starts on the first one.
+  const startColour = [last?.colour, hand.colour].find(isPaletteColour) ?? COLOURS[0].hex;
 
   const prompt = alreadyMarked
     ? `<p id="status">Your mark is already on the wall. You can add another ${untilPhrase(msUntilNextMark)}.</p>`
@@ -88,21 +108,22 @@ export function wallPage(
       ${
         alreadyMarked
           ? ""
-          : `<fieldset id="tools" style="--ink:${escape(handColour)}">
-        <legend>Today's mark: pick a pen, then draw</legend>
+          : `<fieldset id="tools" style="--ink:${startColour}">
+        <legend>Today's mark: pick a pen and a colour, then draw</legend>
         ${penPicker(last?.pen ?? DEFAULT_PEN)}
+        ${colourPicker(startColour)}
       </fieldset>`
       }
       <svg id="wall" viewBox="0 0 1000 600" ${svgAttrs}>
       ${strokes}
       </svg>
       ${prompt}
-      <p><small>You draw as <strong style="color:${escape(handColour)}">this colour</strong>.${ownCount > 0 ? ` Your ${ownCount === 1 ? "mark is" : `${ownCount} marks are`} the thicker ${ownCount === 1 ? "stroke" : "strokes"}.` : ""} <a href="/readme/">What this is, and why</a>.</small></p>
+      <p><small>${ownCount > 0 ? `Your ${ownCount === 1 ? "mark is the stroke" : `${ownCount} marks are the strokes`} on top, ringed by a clear band. ` : ""}<a href="/readme/">What this is, and why</a>.</small></p>
     </main>
     <script
       src="/wall.js"
       data-can-draw="${alreadyMarked ? "false" : "true"}"
-      data-hand-colour="${escape(handColour)}"
+      data-hand-colour="${escape(hand.colour)}"
     ></script>`,
   );
 }

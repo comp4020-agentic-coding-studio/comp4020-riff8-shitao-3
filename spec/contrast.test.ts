@@ -1,9 +1,10 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-// A hand's colour is the only thing that distinguishes its marks, and a
-// mark is drawn straight onto the page background --- no fill the wall
-// controls --- so under `color-scheme: light dark` (style.css) that
+// Every colour a hand can pick for a mark (and every colour colourFor hands
+// out) is in identity.ts's COLOURS; spec/wall.test.ts checks the picker
+// offers exactly that list. A mark is drawn straight onto the page
+// background --- no fill the wall controls --- so under `color-scheme: light dark` (style.css) that
 // background can be white or near-black depending on the visitor's own
 // system preference, not just whichever one a screenshot happens to use.
 // WCAG 1.4.11's 3:1 non-text contrast threshold applies to a graphical
@@ -12,7 +13,7 @@ import { describe, expect, it } from "vitest";
 // hardcoded copy, so a future palette edit is caught here instead of
 // silently reintroducing a near-invisible colour.
 const source = readFileSync(new URL("../src/identity.ts", import.meta.url), "utf8");
-const match = source.match(/const COLOURS = \[([\s\S]*?)\];/);
+const match = source.match(/export const COLOURS = \[([\s\S]*?)\];/);
 if (!match) throw new Error("couldn't find COLOURS in identity.ts");
 const COLOURS = [...match[1].matchAll(/#[0-9a-fA-F]{6}/g)].map((m) => m[0]);
 
