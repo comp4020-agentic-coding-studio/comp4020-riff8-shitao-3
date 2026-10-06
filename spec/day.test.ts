@@ -20,14 +20,14 @@ it("refuses a second mark an hour later, even across UTC midnight", () => {
   // 23:30 UTC is 10:30am in Canberra; the old UTC-day rule reopened at 11am.
   createHand("night", "night", "#000");
   const drawnAt = Date.UTC(2026, 9, 3, 23, 30);
-  addMark("night", "M1,1 L2,2", "#000", drawnAt);
+  addMark("night", "M1,1 L2,2", "#000", "line", drawnAt);
   expect(msUntilNextMark("night", drawnAt + HOUR)).toBe(23 * HOUR);
 });
 
 it("lets a hand draw again once 24 hours have passed, whatever the calendar says", () => {
   createHand("noon", "noon", "#000");
   const drawnAt = Date.UTC(2026, 9, 4, 1, 0);
-  addMark("noon", "M1,1 L2,2", "#000", drawnAt);
+  addMark("noon", "M1,1 L2,2", "#000", "line", drawnAt);
   // Next morning in Canberra is still the same UTC day: the old rule refused it.
   expect(msUntilNextMark("noon", drawnAt + 23 * HOUR)).toBeGreaterThan(0);
   expect(msUntilNextMark("noon", drawnAt + MARK_INTERVAL_MS)).toBe(0);
