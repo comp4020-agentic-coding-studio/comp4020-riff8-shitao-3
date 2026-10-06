@@ -62,6 +62,7 @@ export function wallPage(
     `    <main>
       <h1>Trace</h1>
       <p>One wall. One mark each, once a day. Nothing else.</p>
+      <p class="why">A mark here is a gesture, not a post: no words, no likes, nobody to follow. The wall grows by care, not engagement, one stroke per hand per day, and nothing on it ever resets.</p>
       <svg id="wall" viewBox="0 0 1000 600" ${svgAttrs}>
       ${strokes}
       </svg>

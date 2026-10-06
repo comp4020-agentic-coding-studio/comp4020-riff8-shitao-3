@@ -21,6 +21,13 @@ it("gives a first-time visitor a hand cookie", async () => {
   expect(cookie).toMatch(/^hand=[0-9a-f-]{36}$/);
 });
 
+it("says what the wall is for on the wall itself, and still links the full argument", async () => {
+  const html = await (await fetch(new URL("/", baseUrl))).text();
+  const doc = new JSDOM(html).window.document;
+  expect(doc.querySelector(".why")?.textContent).toMatch(/gesture, not a post/);
+  expect(doc.querySelector('a[href="/readme/"]')).not.toBeNull();
+});
+
 it("a hand's mark appears on the wall and survives a fresh request", async () => {
   const first = await fetch(new URL("/", baseUrl));
   const cookie = cookieFrom(first);

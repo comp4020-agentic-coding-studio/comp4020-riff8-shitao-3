@@ -47,3 +47,8 @@ body {
 main img {
   max-width: 100%;
 }
+
+.why {
+  margin-top: 0;
+  font-size: 0.95rem;
+}
