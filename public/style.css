@@ -46,16 +46,16 @@ body {
 }
 
 .pen-hairline {
-  --w: 1.5;
+  --w: 2;
 }
 
 .pen-brush {
-  --w: 11;
+  --w: 7.5;
 }
 
 .pen-dots {
-  --w: 7;
-  --dash: 0 15;
+  --w: 6;
+  --dash: 0 13;
 }
 
 .pen-dashes {
@@ -179,4 +179,9 @@ main img {
 .why {
   margin-top: 0;
   font-size: 0.95rem;
+}
+
+#tools .pens .options {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
 }
