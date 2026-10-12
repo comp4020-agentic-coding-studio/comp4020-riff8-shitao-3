@@ -137,9 +137,12 @@ function sameOrigin(req: IncomingMessage): boolean {
 }
 
 // Successful publications per address per hour, on top of one per hand per
-// day: minting a fresh cookie is free, an address isn't. Fly's proxy sets
-// Fly-Client-IP; anywhere else the header could be forged, so it's ignored.
-const PUBLISH_PER_ADDRESS_HOUR = Number(process.env.MUSEUM_PER_ADDRESS_HOUR ?? 30);
+// day: minting a fresh cookie is free, an address isn't. Sixty leaves room
+// for a classroom behind one network. Fly's proxy sets Fly-Client-IP;
+// anywhere else the header could be forged, so it's ignored, and a local
+// server doesn't limit its own machine, so `pnpm check` can be rerun.
+const PUBLISH_PER_ADDRESS_HOUR = Number(process.env.MUSEUM_PER_ADDRESS_HOUR ?? 60);
+const LOOPBACK = new Set(["127.0.0.1", "::1", "::ffff:127.0.0.1"]);
 const recent = new Map<string, number[]>();
 const addressOf = (req: IncomingMessage) =>
   (isProd ? (req.headers["fly-client-ip"] as string | undefined) : undefined) ?? req.socket.remoteAddress ?? "?";
@@ -490,7 +493,7 @@ const server = createServer(async (req, res) => {
       }
       const address = addressOf(req);
       const fromAddress = windowed(address);
-      if (fromAddress.length >= PUBLISH_PER_ADDRESS_HOUR) {
+      if (fromAddress.length >= PUBLISH_PER_ADDRESS_HOUR && (isProd || !LOOPBACK.has(address))) {
         json(res, 429, { error: "A lot of exhibits have come from this network in the last hour. Try again later." });
         return;
       }

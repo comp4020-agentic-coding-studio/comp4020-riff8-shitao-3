@@ -487,12 +487,18 @@ body.museum [hidden] {
   aspect-ratio: 1;
 }
 
+.card-caption {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
 .exhibit-card .seal-small {
-  position: absolute;
-  right: -0.6rem;
-  bottom: -0.9rem;
+  flex: none;
   width: 4.5rem;
   height: 4.5rem;
+  margin-top: -1.6rem;
   background: var(--frame);
   border-radius: 50%;
   box-shadow: 0 0 0 1px var(--rule);
@@ -501,7 +507,6 @@ body.museum [hidden] {
 .card-label {
   font-size: 1.05rem;
   line-height: 1.3;
-  padding-right: 3.5rem;
   overflow-wrap: anywhere;
 }
 
@@ -1110,12 +1115,12 @@ body.prose main {
   }
 
   .exhibit-card .seal-small {
-    width: 3.4rem;
-    height: 3.4rem;
+    width: 3.6rem;
+    height: 3.6rem;
+    margin-top: -1.2rem;
   }
 
   .card-label {
-    padding-right: 0;
     font-size: 0.95rem;
   }
 

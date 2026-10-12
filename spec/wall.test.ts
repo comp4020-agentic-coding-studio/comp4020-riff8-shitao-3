@@ -309,9 +309,16 @@ it("broadcasts a new mark over /api/marks/stream within a second", async () => {
   const cookie = cookieFrom(first);
   const path = "M11,12 L13,14";
 
+  // Other spec files post marks concurrently; wait for this one.
+  const ownMark = async () => {
+    for (;;) {
+      const event = await nextMarkEvent();
+      if (event.path === path) return event;
+    }
+  };
   const [event] = await Promise.all([
     Promise.race([
-      nextMarkEvent(),
+      ownMark(),
       new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error("no mark event within 3s")), 3000),
       ),

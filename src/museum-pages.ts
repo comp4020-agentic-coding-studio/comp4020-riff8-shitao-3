@@ -57,8 +57,8 @@ const reasonTag = (e: Exhibit) =>
 export function exhibitCard(e: Exhibit, mine = false): string {
   return `<li class="exhibit-card${mine ? " mine" : ""}" data-id="${e.id}" data-cabinet="${escape(e.duration)}">
         <a class="card-link" href="${exhibitHref(e.id)}">
-          <span class="frame">${sketchSvg(e)}${sealSvg(descriptorOf(e), e.colour, "seal seal-small")}</span>
-          <span class="card-label">${escape(e.label)}</span>
+          <span class="frame">${sketchSvg(e)}</span>
+          <span class="card-caption"><span class="card-label">${escape(e.label)}</span>${sealSvg(descriptorOf(e), e.colour, "seal seal-small")}</span>
         </a>
         <span class="card-meta"><span class="accession">${accession(e.id)}</span><span class="yours">Your exhibit</span></span>
         <span class="card-tags">${originBadge(e)} ${reasonTag(e)}</span>
