@@ -50,3 +50,41 @@ describe("hand palette vs WCAG 1.4.11's 3:1 non-text contrast", () => {
     });
   }
 });
+
+// The museum draws sketches and seals on a frame mat (--frame in
+// style.css), one value per colour scheme, and its text on the paper around
+// it. Read straight from the stylesheet so a retuned mat is checked too.
+const css = readFileSync(new URL("../public/style.css", import.meta.url), "utf8");
+const museum = css.slice(css.indexOf("body.museum {"));
+const vars = (name: string) => [...museum.matchAll(new RegExp(`--${name}: (#[0-9a-fA-F]{6});`, "g"))].map((m) => m[1]);
+
+describe("museum ink and text in both colour schemes", () => {
+  it("defines a light and a dark frame, paper and text", () => {
+    for (const name of ["frame", "paper", "text", "muted"]) expect(vars(name)).toHaveLength(2);
+  });
+
+  for (const frame of vars("frame")) {
+    for (const hex of COLOURS) {
+      it(`${hex} reads at 3:1 on the ${frame} frame`, () => {
+        expect(contrast(hex, luminance(frame))).toBeGreaterThanOrEqual(3);
+      });
+    }
+  }
+
+  it("text and muted text read at 4.5:1 on their paper and frame", () => {
+    const [paperLight, paperDark] = vars("paper");
+    const [frameLight, frameDark] = vars("frame");
+    const [textLight, textDark] = vars("text");
+    const [mutedLight, mutedDark] = vars("muted");
+    for (const [fg, bg] of [
+      [textLight, paperLight],
+      [mutedLight, paperLight],
+      [mutedLight, frameLight],
+      [textDark, paperDark],
+      [mutedDark, paperDark],
+      [mutedDark, frameDark],
+    ]) {
+      expect(contrast(fg, luminance(bg)), `${fg} on ${bg}`).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+});
