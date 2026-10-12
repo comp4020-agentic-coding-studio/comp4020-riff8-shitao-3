@@ -67,15 +67,22 @@ const SECURITY_HEADERS = {
 
 class TooLarge extends Error {}
 
+// Past `limit` the rest of the body is read and thrown away, so the client
+// finishes sending and actually sees the 413; past ten times the limit the
+// connection is cut.
 function readBody(req: IncomingMessage, limit = 100_000): Promise<string> {
   return new Promise((resolve, reject) => {
     let data = "";
     let size = 0;
     req.on("data", (chunk: Buffer) => {
       size += chunk.length;
+      if (size > limit * 10) {
+        req.destroy();
+        return;
+      }
       if (size > limit) {
+        data = "";
         reject(new TooLarge("body too large"));
-        req.pause();
         return;
       }
       data += chunk;
@@ -464,7 +471,10 @@ const server = createServer(async (req, res) => {
         if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("not an object");
         body = parsed as Record<string, unknown>;
       } catch (err) {
-        if (err instanceof TooLarge) json(res, 413, { error: "That exhibit is too large to send." });
+        if (err instanceof TooLarge) {
+          res.setHeader("Connection", "close");
+          json(res, 413, { error: "That exhibit is too large to send." });
+        }
         else json(res, 400, { error: "Malformed request." });
         return;
       }
