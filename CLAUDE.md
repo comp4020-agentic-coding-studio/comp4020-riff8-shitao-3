@@ -47,7 +47,8 @@ argues both; these rules keep the code honest to it:
   No route accepts uploads, real names, photographs or locations.
 - **No accounts, ever.** Identity is the `hand` cookie `src/identity.ts`
   mints. Ownership of exhibits and marks lives in the database and is only
-  ever used privately (`mine`, withdrawal, same-owner exclusion). Never put
+  ever used privately (`mine`, withdrawal, leaving a viewer's own exhibits
+  out of their threads). Never put
   a hand id, or anything derived from one, in a page, an endpoint, a stream
   event or a thread link.
 - **Two rolling 24-hour limits, both enforced in `src/db.ts`.** One wall
