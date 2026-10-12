@@ -19,21 +19,21 @@ function cookieFrom(res: Response): string {
 }
 
 it("gives a first-time visitor a hand cookie", async () => {
-  const res = await fetch(new URL("/", baseUrl));
+  const res = await fetch(new URL("/wall/", baseUrl));
   expect(res.status).toBe(200);
   const cookie = cookieFrom(res);
   expect(cookie).toMatch(/^hand=[0-9a-f-]{36}$/);
 });
 
 it("says what the wall is for on the wall itself, and still links the full argument", async () => {
-  const html = await (await fetch(new URL("/", baseUrl))).text();
+  const html = await (await fetch(new URL("/wall/", baseUrl))).text();
   const doc = new JSDOM(html).window.document;
   expect(doc.querySelector(".why")?.textContent).toMatch(/gesture, not a post/);
   expect(doc.querySelector('a[href="/readme/"]')).not.toBeNull();
 });
 
 it("a hand's mark appears on the wall and survives a fresh request", async () => {
-  const first = await fetch(new URL("/", baseUrl));
+  const first = await fetch(new URL("/wall/", baseUrl));
   const cookie = cookieFrom(first);
 
   const path = "M1,2 L3,4 L5,6";
@@ -46,14 +46,14 @@ it("a hand's mark appears on the wall and survives a fresh request", async () =>
 
   // A completely fresh request (same cookie, new fetch) --- not just reading
   // back the POST's own response --- so this actually checks persistence.
-  const after = await fetch(new URL("/", baseUrl), { headers: { Cookie: cookie } });
+  const after = await fetch(new URL("/wall/", baseUrl), { headers: { Cookie: cookie } });
   const html = await after.text();
   expect(html).toContain(path);
 });
 
 it("a returning hand can tell its own mark from everyone else's", async () => {
-  const mine = cookieFrom(await fetch(new URL("/", baseUrl)));
-  const other = cookieFrom(await fetch(new URL("/", baseUrl)));
+  const mine = cookieFrom(await fetch(new URL("/wall/", baseUrl)));
+  const other = cookieFrom(await fetch(new URL("/wall/", baseUrl)));
 
   // Unique per run: the app under test keeps its database between runs, and
   // an identical path drawn by an earlier run's hand would match first.
@@ -73,7 +73,7 @@ it("a returning hand can tell its own mark from everyone else's", async () => {
   expect(later.status).toBe(201);
 
   const strokeFor = async (cookie: string) => {
-    const html = await (await fetch(new URL("/", baseUrl), { headers: { Cookie: cookie } })).text();
+    const html = await (await fetch(new URL("/wall/", baseUrl), { headers: { Cookie: cookie } })).text();
     const svg = new JSDOM(html).window.document.getElementById("wall")!;
     const strokes = [...svg.querySelectorAll("path")];
     return {
@@ -93,7 +93,7 @@ it("a returning hand can tell its own mark from everyone else's", async () => {
 });
 
 it("refuses a second mark from the same hand on the same day", async () => {
-  const first = await fetch(new URL("/", baseUrl));
+  const first = await fetch(new URL("/wall/", baseUrl));
   const cookie = cookieFrom(first);
 
   const post = (path: string) =>
@@ -113,7 +113,7 @@ it("refuses a same-day double mark even when one request's body is slow to arriv
   // when the other's completes. Held-open connection A proves the window is
   // closed by deliberately finishing B first while A's body is still en
   // route --- the shape a slow network or a second tab genuinely produces.
-  const first = await fetch(new URL("/", baseUrl));
+  const first = await fetch(new URL("/wall/", baseUrl));
   const cookie = cookieFrom(first);
   const { hostname, port } = new URL(baseUrl);
 
@@ -156,8 +156,8 @@ it("refuses a same-day double mark even when one request's body is slow to arriv
 });
 
 it("draws a mark with the pen and colour its hand chose, for every hand looking", async () => {
-  const mine = cookieFrom(await fetch(new URL("/", baseUrl)));
-  const other = cookieFrom(await fetch(new URL("/", baseUrl)));
+  const mine = cookieFrom(await fetch(new URL("/wall/", baseUrl)));
+  const other = cookieFrom(await fetch(new URL("/wall/", baseUrl)));
   const path = `M${Date.now() % 100_000},31 L32,33 L34,35`;
   const post = await fetch(new URL("/api/marks", baseUrl), {
     method: "POST",
@@ -166,7 +166,7 @@ it("draws a mark with the pen and colour its hand chose, for every hand looking"
   });
   expect(post.status).toBe(201);
 
-  const html = await (await fetch(new URL("/", baseUrl), { headers: { Cookie: other } })).text();
+  const html = await (await fetch(new URL("/wall/", baseUrl), { headers: { Cookie: other } })).text();
   const stroke = [...new JSDOM(html).window.document.querySelectorAll("#wall path")].find(
     (p) => p.getAttribute("d") === path,
   );
@@ -176,7 +176,7 @@ it("draws a mark with the pen and colour its hand chose, for every hand looking"
 
 it("refuses a colour that isn't in the wall's palette", async () => {
   for (const colour of ["#ffff00", "red", "url(#x)", 0xcc4a28]) {
-    const cookie = cookieFrom(await fetch(new URL("/", baseUrl)));
+    const cookie = cookieFrom(await fetch(new URL("/wall/", baseUrl)));
     const res = await fetch(new URL("/api/marks", baseUrl), {
       method: "POST",
       headers: { "Content-Type": "application/json", Cookie: cookie },
@@ -189,7 +189,7 @@ it("refuses a colour that isn't in the wall's palette", async () => {
 it("offers exactly the contrast-checked palette, starting on the hand's own colour", async () => {
   // spec/contrast.test.ts checks identity.ts's COLOURS; this checks they're
   // what the picker actually serves, so the two can't drift apart.
-  const doc = new JSDOM(await (await fetch(new URL("/", baseUrl))).text()).window.document;
+  const doc = new JSDOM(await (await fetch(new URL("/wall/", baseUrl))).text()).window.document;
   const radios = [
     ...doc.querySelectorAll<HTMLInputElement>('#tools input[type=radio][name="colour"]'),
   ];
@@ -237,7 +237,7 @@ it("starts a returning hand's picker on the pen and colour it drew with last", (
 
 it("refuses a pen that isn't one of the wall's own, including a raw stroke style", async () => {
   for (const pen of ["huge", "stroke-width:999", 12, { width: 40 }]) {
-    const cookie = cookieFrom(await fetch(new URL("/", baseUrl)));
+    const cookie = cookieFrom(await fetch(new URL("/wall/", baseUrl)));
     const res = await fetch(new URL("/api/marks", baseUrl), {
       method: "POST",
       headers: { "Content-Type": "application/json", Cookie: cookie },
@@ -248,7 +248,7 @@ it("refuses a pen that isn't one of the wall's own, including a raw stroke style
 });
 
 it("offers every pen as a plain radio button, ahead of the wall in tab order", async () => {
-  const doc = new JSDOM(await (await fetch(new URL("/", baseUrl))).text()).window.document;
+  const doc = new JSDOM(await (await fetch(new URL("/wall/", baseUrl))).text()).window.document;
   const radios = [...doc.querySelectorAll<HTMLInputElement>('#tools input[type=radio][name="pen"]')];
   expect(radios.map((r) => r.value)).toEqual(PENS.map((p) => p.id));
   expect(radios.filter((r) => r.checked)).toHaveLength(1);
@@ -264,7 +264,7 @@ it("gives every pen a look in style.css, so none renders as a bare 1px line", ()
 });
 
 it("rejects a mark that isn't a plain stroke path", async () => {
-  const first = await fetch(new URL("/", baseUrl));
+  const first = await fetch(new URL("/wall/", baseUrl));
   const cookie = cookieFrom(first);
 
   const res = await fetch(new URL("/api/marks", baseUrl), {
@@ -305,7 +305,7 @@ it("broadcasts a new mark over /api/marks/stream within a second", async () => {
       }
     })();
 
-  const first = await fetch(new URL("/", baseUrl));
+  const first = await fetch(new URL("/wall/", baseUrl));
   const cookie = cookieFrom(first);
   const path = "M11,12 L13,14";
 
@@ -329,7 +329,7 @@ it("broadcasts a new mark over /api/marks/stream within a second", async () => {
 });
 
 it("ships no third-party script or stylesheet", async () => {
-  const res = await fetch(new URL("/", baseUrl));
+  const res = await fetch(new URL("/wall/", baseUrl));
   const dom = new JSDOM(await res.text());
   const srcs = [...dom.window.document.querySelectorAll("script[src], link[rel=stylesheet]")].map(
     (el) => el.getAttribute("src") ?? el.getAttribute("href") ?? "",

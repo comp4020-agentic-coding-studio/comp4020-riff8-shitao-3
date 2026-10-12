@@ -3,10 +3,27 @@ import type { Mark } from "./db.ts";
 import { COLOURS, isPaletteColour } from "./identity.ts";
 import { DEFAULT_PEN, PENS, type Pen } from "./pens.ts";
 
-const escape = (s: string): string =>
-  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+export const escape = (s: string): string =>
+  s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 
-const layout = (title: string, body: string): string => `<!doctype html>
+// The three places, on every page.
+export const nav = (current: "museum" | "contribute" | "wall" | "readme" | ""): string => {
+  const link = (id: string, href: string, text: string) =>
+    `<a href="${href}"${id === current ? ' aria-current="page"' : ""}>${text}</a>`;
+  return `<nav class="site" aria-label="Trace">
+      ${link("museum", "/", "The museum")}
+      ${link("contribute", "/contribute/", "Add an exhibit")}
+      ${link("wall", "/wall/", "The original wall")}
+      ${link("readme", "/readme/", "About")}
+    </nav>`;
+};
+
+export const layout = (title: string, body: string, bodyClass = ""): string => `<!doctype html>
 <html lang="en-AU">
   <head>
     <meta charset="utf-8" />
@@ -14,7 +31,7 @@ const layout = (title: string, body: string): string => `<!doctype html>
     <title>${escape(title)}</title>
     <link rel="stylesheet" href="/style.css" />
   </head>
-  <body>
+  <body${bodyClass ? ` class="${bodyClass}"` : ""}>
 ${body}
   </body>
 </html>
@@ -31,7 +48,7 @@ export function untilPhrase(ms: number): string {
 // the picker shows a hand exactly what it would put on the wall.
 const PREVIEW_PATH = "M6,22 C18,4 30,30 44,14 S62,6 74,18";
 
-function penPicker(selected: Pen): string {
+export function penPicker(selected: Pen): string {
   const options = PENS.map(
     (p) => `<label class="option">
           <input type="radio" name="pen" value="${p.id}"${p.id === selected ? " checked" : ""} />
@@ -47,7 +64,7 @@ function penPicker(selected: Pen): string {
       </fieldset>`;
 }
 
-function colourPicker(selected: string): string {
+export function colourPicker(selected: string): string {
   const options = COLOURS.map(
     (c) => `<label class="option swatch" title="${c.name}">
           <input type="radio" name="colour" value="${c.hex}"${c.hex === selected ? " checked" : ""} />
@@ -100,9 +117,10 @@ export function wallPage(
     : `tabindex="0" role="application" aria-label="The shared drawing, one mark per hand. Press Enter or Space to start your mark, arrow keys to draw it, Enter or Space to finish, Escape to cancel."`;
 
   return layout(
-    "Trace",
-    `    <main>
-      <h1>Trace</h1>
+    "The original wall · Trace",
+    `    ${nav("wall")}
+    <main>
+      <h1>Trace: the original wall</h1>
       <p>One wall. One mark each, once a day. Nothing else.</p>
       <p class="why">A mark here is a gesture, not a post: no words, no likes, nobody to follow. The wall grows by care, not engagement, one stroke per hand per day, and nothing on it ever resets.</p>
       ${
@@ -130,5 +148,5 @@ export function wallPage(
 
 export function readmePage(readmeMarkdown: string): string {
   const html = marked.parse(readmeMarkdown, { async: false }) as string;
-  return layout("About Trace", `    <main>\n${html}\n    </main>`);
+  return layout("About Trace", `    ${nav("readme")}\n    <main>\n${html}\n    </main>`, "museum prose");
 }
