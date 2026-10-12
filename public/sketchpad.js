@@ -135,7 +135,11 @@ export function createSketchPad(svg, options = {}) {
     if (!point) return;
     evt.preventDefault();
     if (!begin(point, ["mouse", "touch", "pen"].includes(evt.pointerType) ? evt.pointerType : "mouse", evt.pointerId)) return;
-    svg.setPointerCapture?.(evt.pointerId);
+    // Capture keeps the stroke when the pointer leaves the frame; drawing
+    // still works without it.
+    try {
+      svg.setPointerCapture?.(evt.pointerId);
+    } catch {}
   });
   svg.addEventListener("pointermove", (evt) => {
     if (!active || evt.pointerId !== active.pointerId) return;
@@ -171,8 +175,10 @@ export function createSketchPad(svg, options = {}) {
     }
     if (evt.key === "Enter" || evt.key === " ") {
       evt.preventDefault();
-      if (drawingByKey) end(true);
-      else if (begin(cursor, "keyboard")) onStatus("Drawing: arrow keys draw, Enter or Space ends the stroke, Escape cancels it.");
+      if (drawingByKey) {
+        end(true);
+        onStatus("Stroke added. Arrow keys move the cross; Enter starts another stroke.");
+      } else if (begin(cursor, "keyboard")) onStatus("Drawing: arrow keys draw, Enter or Space ends the stroke, Escape cancels it.");
       return;
     }
     if (evt.key === "Escape" && drawingByKey) {
