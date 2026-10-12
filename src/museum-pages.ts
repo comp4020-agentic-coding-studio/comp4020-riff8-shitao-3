@@ -426,7 +426,7 @@ export function contributePage(opts: { msUntilNext: number; pen: Pen; colour: st
           <h2 id="step-preview"><span class="step-n">3</span> Preview and publish</h2>
           <p class="form-errors" role="alert"></p>
           <button type="button" class="preview-btn">Preview the exhibit</button>
-          <div class="preview" hidden tabindex="-1">
+          <div class="exhibit-preview" hidden tabindex="-1">
             <p class="public-note"><strong>Everything shown here will be public:</strong> the drawing, its label and story, and the trace seal measured from how you drew it. It won't carry your name, and only this browser will know it's yours.</p>
             <div class="preview-body"></div>
             <div class="publish-row">

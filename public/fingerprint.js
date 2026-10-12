@@ -362,11 +362,13 @@ export function sealGeometry(d) {
     const k = speeds.length;
     const angleAt = (i) => angle + (span * (i + 0.5)) / k;
     const outer = speeds.map((v, i) => polar(R_BASE + (R_LIMIT - R_BASE) * Math.min(v / SPEED_CAP, 1), angleAt(i)));
-    const area = [polar(R_BASE, angle), ...outer, polar(R_BASE, angle + span)];
+    // Each filled shape runs out along its measurement and back along its
+    // own circle, so a long stroke's arc never closes across the middle.
+    const along = (r) => [angle, ...speeds.map((_, i) => angleAt(i)), angle + span].map((a) => polar(r, a));
+    const area = [polar(R_BASE, angle), ...outer, ...along(R_BASE).reverse()];
     const band = [
-      polar(R_BAND, angle),
-      ...bends.map((t, i) => polar(R_BAND - BAND_DEPTH * Math.min(t / TURN_CAP, 1), angleAt(i))),
-      polar(R_BAND, angle + span),
+      ...along(R_BAND),
+      ...bends.map((t, i) => polar(R_BAND - BAND_DEPTH * Math.min(t / TURN_CAP, 1), angleAt(i))).reverse(),
     ];
     let run = null;
     speeds.forEach((v, i) => {
@@ -409,10 +411,10 @@ export function sealSvg(d, colour, className = "seal") {
   const { arcs, capped, beads } = sealGeometry(d);
   const parts = [
     `<circle class="seal-limit" cx="${C}" cy="${C}" r="${R_LIMIT}" />`,
-    `<circle class="seal-base" cx="${C}" cy="${C}" r="${R_BASE}" />`,
     `<path class="seal-start" d="M${C - 3},${C - R_LIMIT - 5} L${C + 3},${C - R_LIMIT - 2} L${C - 3},${C - R_LIMIT + 1} Z" />`,
   ];
   for (const a of arcs) {
+    parts.push(`<path class="seal-base" d="${arcPath(R_BASE, a.from, a.to)}" />`);
     parts.push(`<polygon class="seal-speed" points="${pts(a.area)}" />`);
     parts.push(`<polyline class="seal-edge" points="${pts(a.outer)}" />`);
     parts.push(`<polygon class="seal-band" points="${pts(a.band)}" />`);

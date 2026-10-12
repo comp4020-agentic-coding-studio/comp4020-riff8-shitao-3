@@ -185,3 +185,954 @@ main img {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
 }
+
+/* ---------- The museum ----------
+   Warm paper around clear frames. Drawings and seals sit on --frame, which
+   spec/contrast.test.ts holds every ink to 3:1 against in both schemes;
+   the paper only ever carries text. */
+
+body.museum {
+  --paper: #efe7d8;
+  --frame: #fffaf1;
+  --text: #2a241d;
+  --muted: #5e5345;
+  --rule: #b9a88d;
+  --edge: #7d6b52;
+  --accent: #5177aa;
+  max-width: 72rem;
+  background: var(--paper);
+  color: var(--text);
+  font-family: Charter, "Bitstream Charter", "Sitka Text", Cambria, Georgia, serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  body.museum {
+    --paper: #1e1a15;
+    --frame: #0f0d0b;
+    --text: #efe6d7;
+    --muted: #c3b59f;
+    --rule: #5a4e3f;
+    --edge: #a08c6f;
+    --accent: #8fb0dc;
+  }
+}
+
+body.museum a {
+  color: inherit;
+  text-underline-offset: 0.15em;
+}
+
+body.museum :focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+nav.site {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+  font-family: system-ui, sans-serif;
+  font-size: 0.95rem;
+  margin-bottom: 1rem;
+}
+
+nav.site a[aria-current="page"] {
+  font-weight: 700;
+  text-decoration-thickness: 2px;
+}
+
+.museum-head {
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 1.5rem;
+}
+
+.museum-title {
+  margin: 0 0 0.75rem;
+  font-variant: small-caps;
+  letter-spacing: 0.06em;
+}
+
+.museum-title a {
+  text-decoration: none;
+}
+
+body.museum h1 {
+  font-weight: 500;
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  line-height: 1.15;
+  margin: 0.25rem 0 0.5rem;
+}
+
+.invitation {
+  font-size: 1.25rem;
+  font-style: italic;
+  margin: 0 0 1rem;
+}
+
+.intro,
+.caveat,
+.help {
+  color: var(--muted);
+  max-width: 42rem;
+}
+
+.button,
+body.museum button {
+  font: inherit;
+  font-family: system-ui, sans-serif;
+  font-size: 0.95rem;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid var(--edge);
+  border-radius: 0.3rem;
+  background: var(--frame);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.button {
+  display: inline-block;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+body.museum button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+body.museum button.danger {
+  border-color: #cc4a28;
+}
+
+.notice,
+.first,
+.reported,
+.hidden-note,
+.draft-note {
+  border-left: 4px solid var(--edge);
+  background: var(--frame);
+  padding: 0.6rem 0.9rem;
+  max-width: 42rem;
+}
+
+.draft-note p,
+.hidden-note p {
+  margin: 0 0 0.4rem;
+}
+
+/* The legend. */
+.legend {
+  border: 1px solid var(--rule);
+  border-radius: 0.4rem;
+  padding: 0.5rem 0.9rem;
+  margin: 1.5rem 0;
+  background: color-mix(in srgb, var(--frame) 50%, transparent);
+}
+
+.legend summary {
+  cursor: pointer;
+  font-family: system-ui, sans-serif;
+  font-weight: 600;
+}
+
+.legend-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+
+.legend figure {
+  margin: 0;
+}
+
+.legend svg {
+  width: 7.5rem;
+  height: 4.5rem;
+  display: block;
+  margin-bottom: 0.3rem;
+}
+
+.legend figcaption {
+  font-size: 0.92rem;
+}
+
+.lg-base,
+.lg-limit,
+.lg-speed,
+.lg-arc {
+  fill: none;
+  stroke: currentColor;
+}
+
+.lg-limit {
+  stroke-dasharray: 3 3;
+  opacity: 0.7;
+}
+
+.lg-speed {
+  stroke-width: 2.5;
+  stroke: var(--accent);
+}
+
+.lg-bead {
+  fill: var(--paper);
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+
+.lg-band {
+  fill: var(--accent);
+  opacity: 0.6;
+}
+
+.lg-arc {
+  stroke-width: 6;
+  stroke: var(--accent);
+}
+
+.lg-notch {
+  fill: currentColor;
+}
+
+/* Cabinets and shelves. */
+.cabinets {
+  display: grid;
+  gap: 2rem;
+}
+
+.cabinet {
+  border: 1px solid var(--rule);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem 1rem;
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--frame) 35%, transparent), transparent 6rem);
+}
+
+.cabinet h2,
+.cabinet h1 {
+  font-weight: 500;
+  font-size: 1.35rem;
+  margin: 0 0 0.75rem;
+}
+
+.count {
+  font-family: system-ui, sans-serif;
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-weight: 400;
+  margin-left: 0.4rem;
+}
+
+.shelf {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr));
+  gap: 1.25rem 1rem;
+}
+
+.shelf:has(li) + .empty-shelf,
+body.museum [hidden] {
+  display: none;
+}
+
+.empty-shelf {
+  color: var(--muted);
+  font-style: italic;
+  margin: 0;
+}
+
+.exhibit-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 3px solid var(--rule);
+}
+
+.card-link {
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.card-link:hover .card-label {
+  text-decoration: underline;
+}
+
+.frame {
+  position: relative;
+  display: block;
+  margin: 0;
+  background: var(--frame);
+  border: 1px solid var(--edge);
+  box-shadow:
+    0 0 0 4px var(--frame),
+    0 0 0 5px var(--rule),
+    0 3px 8px rgb(0 0 0 / 0.12);
+  border-radius: 2px;
+}
+
+.exhibit-card .frame {
+  margin: 5px 5px 0.6rem;
+}
+
+.sketch {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+}
+
+.exhibit-card .seal-small {
+  position: absolute;
+  right: -0.6rem;
+  bottom: -0.9rem;
+  width: 4.5rem;
+  height: 4.5rem;
+  background: var(--frame);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--rule);
+}
+
+.card-label {
+  font-size: 1.05rem;
+  line-height: 1.3;
+  padding-right: 3.5rem;
+  overflow-wrap: anywhere;
+}
+
+.card-meta,
+.card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.5rem;
+  align-items: center;
+  font-family: system-ui, sans-serif;
+  font-size: 0.8rem;
+}
+
+.accession {
+  font-family: system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.yours {
+  display: none;
+  font-family: system-ui, sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.05rem 0.45rem;
+  border-radius: 1rem;
+  background: var(--text);
+  color: var(--paper);
+}
+
+.mine .yours,
+.exhibit .yours {
+  display: inline-block;
+}
+
+.exhibit-card.mine {
+  border-bottom-color: var(--text);
+}
+
+.exhibit-card.hidden-here > :not(.hidden-card-note) {
+  display: none;
+}
+
+.hidden-card-note {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.badge,
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.05rem 0.5rem;
+  border: 1px solid var(--rule);
+  border-radius: 0.25rem;
+  font-family: system-ui, sans-serif;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  background: var(--frame);
+}
+
+.origin-unknown {
+  border-style: dashed;
+}
+
+.tag {
+  border-radius: 1rem;
+}
+
+.tag::before {
+  content: "";
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: var(--tag);
+}
+
+.reason-memory {
+  --tag: #9d4edd;
+}
+
+.reason-comfort {
+  --tag: #a06a13;
+}
+
+.reason-usefulness {
+  --tag: #2a9d8f;
+}
+
+.reason-connection {
+  --tag: #cc4a28;
+}
+
+.reason-curiosity {
+  --tag: #5177aa;
+}
+
+.see-all,
+.pager {
+  margin: 0.9rem 0 0;
+  font-family: system-ui, sans-serif;
+  display: flex;
+  gap: 1.5rem;
+}
+
+.crumbs {
+  font-family: system-ui, sans-serif;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+/* Museum ink: the wall's pens, drawn at a steady on-screen width whatever
+   size the frame is. */
+.sketch path,
+#sketchpad path {
+  fill: none;
+  stroke-linecap: var(--cap, round);
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  stroke-width: calc(var(--w, 4) * var(--k, 0.8) * 1px);
+  stroke-dasharray: var(--dash, none);
+}
+
+.frame-large .sketch path,
+#sketchpad path {
+  --k: 1;
+}
+
+/* The seal. Its colour is the drawing's ink; its shape is the measurement. */
+.seal {
+  display: block;
+  color: var(--ink, currentColor);
+}
+
+.seal-limit {
+  fill: none;
+  stroke: var(--text);
+  stroke-width: 0.6;
+  stroke-dasharray: 1.5 1.5;
+  opacity: 0.6;
+}
+
+.seal-base {
+  fill: none;
+  stroke: var(--text);
+  stroke-width: 1;
+  opacity: 0.8;
+}
+
+.seal-start {
+  fill: var(--text);
+}
+
+.seal-speed {
+  fill: currentColor;
+  fill-opacity: 0.22;
+  stroke: none;
+}
+
+.seal-edge {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+}
+
+.seal-band {
+  fill: currentColor;
+  fill-opacity: 0.7;
+}
+
+.seal-cap {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3.5;
+}
+
+.seal-bead {
+  fill: var(--frame);
+  stroke: currentColor;
+  stroke-width: 1.4;
+}
+
+.seal-large {
+  width: 13rem;
+  height: 13rem;
+}
+
+/* One exhibit. */
+.exhibit {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 2rem;
+  align-items: start;
+}
+
+.exhibit-art {
+  display: grid;
+  gap: 1rem;
+  justify-items: center;
+}
+
+.frame-large {
+  width: 100%;
+  max-width: 34rem;
+}
+
+.seal-figure {
+  margin: 0;
+  display: grid;
+  justify-items: center;
+  gap: 0.2rem;
+  background: var(--frame);
+  border: 1px solid var(--rule);
+  border-radius: 50%;
+  padding: 0.75rem;
+}
+
+.seal-figure figcaption {
+  font-family: system-ui, sans-serif;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.exhibit-art .seal-figure {
+  border-radius: 1rem;
+}
+
+.story {
+  margin: 1rem 0;
+  padding: 0 0 0 1rem;
+  border-left: 3px solid var(--rule);
+  font-size: 1.15rem;
+  font-style: italic;
+  overflow-wrap: anywhere;
+}
+
+.story p {
+  margin: 0;
+}
+
+.facts,
+.measures {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+}
+
+.facts div,
+.measures div {
+  display: grid;
+  grid-template-columns: 9.5rem 1fr;
+  gap: 0.75rem;
+}
+
+.facts dt,
+.measures dt {
+  font-family: system-ui, sans-serif;
+  font-size: 0.85rem;
+  color: var(--muted);
+  padding-top: 0.15rem;
+}
+
+.facts dd,
+.measures dd {
+  margin: 0;
+}
+
+.fingerprint,
+.threads,
+.owner,
+.report {
+  margin-top: 2.5rem;
+  max-width: 48rem;
+}
+
+.fingerprint h2,
+.threads h2,
+.owner h2 {
+  font-weight: 500;
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 0.3rem;
+}
+
+.threads ul {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 1rem;
+}
+
+.threads li {
+  background: var(--frame);
+  border: 1px solid var(--rule);
+  border-radius: 0.4rem;
+  padding: 0.6rem 0.9rem;
+}
+
+.threads h3 {
+  font-family: system-ui, sans-serif;
+  font-size: 0.95rem;
+  margin: 0 0 0.3rem;
+}
+
+.threads p {
+  margin: 0;
+}
+
+.threads a {
+  font-weight: 600;
+  margin-right: 0.4rem;
+}
+
+.why-link,
+.none {
+  color: var(--muted);
+}
+
+.report details {
+  margin-top: 0.75rem;
+}
+
+.report summary {
+  cursor: pointer;
+  font-family: system-ui, sans-serif;
+}
+
+.report fieldset,
+.choices {
+  border: 1px solid var(--rule);
+  border-radius: 0.4rem;
+  margin: 0.75rem 0;
+  padding: 0.5rem 0.9rem 0.75rem;
+}
+
+.report label {
+  display: block;
+  padding: 0.2rem 0;
+}
+
+/* The comparison. */
+.amp {
+  font-style: italic;
+  color: var(--muted);
+}
+
+.thread-why {
+  font-size: 1.15rem;
+}
+
+.view-switch {
+  display: inline-flex;
+  border: 1px solid var(--edge);
+  border-radius: 2rem;
+  overflow: hidden;
+  margin: 0.5rem 0 1.5rem;
+  font-family: system-ui, sans-serif;
+}
+
+.view-switch a {
+  padding: 0.45rem 1.1rem;
+  text-decoration: none;
+}
+
+.view-switch a[aria-current="true"] {
+  background: var(--text);
+  color: var(--paper);
+  font-weight: 600;
+}
+
+.pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+.pair-item h2 {
+  font-weight: 500;
+  margin: 0.2rem 0 0.75rem;
+  overflow-wrap: anywhere;
+}
+
+.pair-item .seal-figure {
+  justify-self: center;
+  width: fit-content;
+  margin: 0 auto 1rem;
+}
+
+#compare[data-view="objects"] .view-gestures,
+#compare[data-view="gestures"] .view-objects {
+  display: none;
+}
+
+.view-gestures,
+.view-objects {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.gesture-notes {
+  margin-top: 2rem;
+  max-width: 48rem;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  #compare.reveal .seal-figure,
+  #compare.reveal .view-objects .frame {
+    animation: reveal 0.6s ease-out both;
+  }
+
+  #compare.reveal .pair-item:last-child .seal-figure,
+  #compare.reveal .pair-item:last-child .view-objects .frame {
+    animation-delay: 0.15s;
+  }
+
+  .exhibit-card.arrived .frame {
+    animation: arrive 1.2s ease-out;
+  }
+}
+
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: scale(0.85) rotate(-25deg);
+  }
+}
+
+@keyframes arrive {
+  from {
+    box-shadow:
+      0 0 0 4px var(--frame),
+      0 0 0 9px var(--accent);
+  }
+}
+
+/* Contributing. */
+.step {
+  margin: 2rem 0;
+  max-width: 46rem;
+}
+
+.step h2 {
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.step-n {
+  display: inline-grid;
+  place-items: center;
+  width: 1.8rem;
+  height: 1.8rem;
+  border-radius: 50%;
+  border: 1px solid var(--edge);
+  font-family: system-ui, sans-serif;
+  font-size: 1rem;
+}
+
+body.museum #tools {
+  font-family: system-ui, sans-serif;
+}
+
+.pad-wrap {
+  max-width: min(34rem, 100%, 75vh);
+}
+
+#sketchpad {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  touch-action: none;
+  cursor: crosshair;
+  margin: 5px;
+}
+
+#sketchpad .cursor {
+  stroke: var(--text);
+  stroke-width: 1px;
+  --w: 1;
+  --k: 1;
+  stroke-dasharray: none;
+  opacity: 0;
+}
+
+#sketchpad:focus-visible .cursor {
+  opacity: 0.8;
+}
+
+.pad-actions,
+.publish-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin: 0.9rem 0 0;
+}
+
+.pad-status,
+.publish-status,
+.form-status {
+  min-height: 1.5em;
+  font-family: system-ui, sans-serif;
+  font-size: 0.95rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.3rem;
+  margin: 1rem 0;
+}
+
+.field label {
+  font-weight: 600;
+}
+
+.hint,
+.counter {
+  font-family: system-ui, sans-serif;
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.field input,
+.field textarea {
+  font: inherit;
+  padding: 0.5rem;
+  border: 1px solid var(--edge);
+  border-radius: 0.3rem;
+  background: var(--frame);
+  color: var(--text);
+}
+
+[aria-invalid="true"] {
+  outline: 2px solid #cc4a28;
+  outline-offset: 2px;
+}
+
+.warn {
+  font-family: system-ui, sans-serif;
+  font-size: 0.9rem;
+}
+
+.choices legend {
+  font-weight: 600;
+  padding: 0 0.3rem;
+}
+
+.choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0.25rem 1rem 0.25rem 0;
+  font-family: system-ui, sans-serif;
+  font-size: 0.95rem;
+}
+
+.form-errors {
+  font-family: system-ui, sans-serif;
+}
+
+.form-errors:not(:empty) {
+  border-left: 4px solid #cc4a28;
+  padding: 0.5rem 0.8rem;
+  background: var(--frame);
+}
+
+.exhibit-preview {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px dashed var(--edge);
+  border-radius: 0.5rem;
+}
+
+.exhibit-preview .exhibit {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.preview-label {
+  font-size: 1.4rem;
+  font-weight: 500;
+  margin: 0.2rem 0;
+}
+
+.exhibit-preview .measures {
+  margin-top: 1rem;
+}
+
+body.prose main {
+  max-width: 46rem;
+}
+
+@media (max-width: 40rem) {
+  body.museum {
+    padding: 1rem;
+  }
+
+  /* Phones: each cabinet a shelf you scroll down through, two objects across. */
+  .shelf {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.1rem 0.75rem;
+  }
+
+  .exhibit-card .seal-small {
+    width: 3.4rem;
+    height: 3.4rem;
+  }
+
+  .card-label {
+    padding-right: 0;
+    font-size: 0.95rem;
+  }
+
+  .exhibit,
+  .exhibit-preview .exhibit,
+  .pair {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .facts div,
+  .measures div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  .seal-large {
+    width: 11rem;
+    height: 11rem;
+  }
+}
