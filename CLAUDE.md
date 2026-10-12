@@ -35,38 +35,44 @@ agent was directed, not for what anyone owes.
 
 # Your harness
 
-Trace's argument (`README.md`) is that a mark is a gesture, not a post, and
-that the wall grows by care, not by engagement. These rules keep the code
-honest to that, not just the README:
+Trace is now two rooms: the museum at `/` (an exhibit is a sketch, a short
+story and a trace seal measured from how the sketch was drawn) and the
+original wall at `/wall/` (a mark is one gesture, nothing else). `README.md`
+argues both; these rules keep the code honest to it:
 
-- **A mark is a path, never text.** No route ever accepts a caption, a
-  username the visitor types, or an uploaded image. If a future feature
-  wants words attached to a mark, that's a README rewrite first, not a
-  quiet field addition.
+- **Words belong to exhibits, never to marks.** A museum exhibit carries a
+  plain-text label (60 characters) and story (240), validated in
+  `src/museum.ts` and escaped everywhere they're rendered, including the
+  card HTML the stream sends. A wall mark is still a path and nothing else.
+  No route accepts uploads, real names, photographs or locations.
 - **No accounts, ever.** Identity is the `hand` cookie `src/identity.ts`
-  mints, nothing else. Don't add a login, an email field, or anything that
-  outlives the cookie.
-- **The one-mark-a-day limit is enforced in `src/db.ts`, not the client.**
-  The drawing UI can hide the button after a mark lands, but the server must
-  independently refuse a second `POST /api/marks` from the same hand within
-  24 hours of its last mark (a rolling window, never a calendar day) even if
-  the client is a bare `curl`.
-- **No third-party requests.** No analytics, no CDN-hosted fonts or scripts,
-  no embeds. Every `<script>` and `<link>` the server sends is same-origin.
-  `spec/wall.test.ts` checks this; don't add an exception without updating
-  both the test and README's "what's enforced" list.
-- **Persistence lives at `DB_PATH` (default `/data/trace.db`, matching
-  `fly.toml`'s volume).** Never write app state anywhere else, and never
-  assume `/data` is empty --- a redeploy reuses the volume.
-- **A mark broadcasts over `/api/marks/stream` the moment it's persisted,
-  never before.** `src/server.ts`'s `broadcastMark` runs after `addMark`
-  returns, not instead of it --- a hand's mark has to survive a restart
-  before any open tab is told about it, so real-time is layered on top of
-  persistence, not a substitute for it.
+  mints. Ownership of exhibits and marks lives in the database and is only
+  ever used privately (`mine`, withdrawal, same-owner exclusion). Never put
+  a hand id, or anything derived from one, in a page, an endpoint, a stream
+  event or a thread link.
+- **Two rolling 24-hour limits, both enforced in `src/db.ts`.** One wall
+  mark per hand, and one published exhibit per hand, counted from the
+  `publications` table, which withdrawal never touches. The museum's check
+  and insert run in one synchronous transaction with no `await` between.
+- **The server measures the drawing.** A client sends samples; the
+  descriptor (speed, pauses, turning, seal) is recomputed by
+  `public/fingerprint.js` on the server from validated samples, and stored
+  with its version. Never accept finished statistics from a client, and
+  never use them for anything but describing the sketch.
+- **Movement is only measured inside the museum's drawing surface**, only
+  between a stroke's start and end, and only published if the visitor
+  presses Publish. Drafts stay in the browser.
+- **Persist, then broadcast.** A mark or exhibit is committed before any
+  stream hears of it. Museum events go out on `/api/museum/stream` with a
+  sequence number from `museum_events` so a reconnecting tab replays what it
+  missed; wall marks keep their own `/api/marks/stream`.
+- **No third-party requests.** Every `<script>` and `<link>` is
+  same-origin; `spec/wall.test.ts` checks this.
+- **Persistence lives at `DB_PATH`** (default `/data/trace.db`, matching
+  `fly.toml`'s volume). A redeploy reuses the volume, so schema changes are
+  idempotent migrations (`spec/migrate.test.ts`).
 - **When a check catches a real mistake, fix the check or the harness too**,
-  not just the code once, so the same mistake can't silently ship again.
+  not just the code once.
 
 What the template ships is explained where it lives --- `fly.toml`, the
-`Dockerfile`, the CI workflow and `spec/README.md` each say what they fix ---
-and the course website publishes the
-[final project brief](https://comp.anu.edu.au/courses/comp4020-agentic-coding-studio/assessments/final-project/).
+`Dockerfile`, the CI workflow and `spec/README.md` each say what they fix.
