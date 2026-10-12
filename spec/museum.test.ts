@@ -320,7 +320,7 @@ group("ownership and anonymity", () => {
     const ok = await fetch(url(`/api/exhibits/${id}/withdraw`), { method: "POST", headers: { Cookie: owner } });
     expect(ok.status).toBe(200);
     const event = await stream.next((e) => e.event === "withdraw" && e.data.id === id);
-    expect(Object.keys(event.data).sort()).toEqual(["cabinet", "id", "seq"]);
+    expect(Object.keys(event.data).sort()).toEqual(["cabinet", "count", "id", "seq"]);
     stream.close();
 
     expect((await page(objectPath(id))).status).toBe(404);
@@ -378,8 +378,12 @@ group("live and recoverable", () => {
     const late = await openStream(`/api/museum/stream?since=${since}`);
     const added = await late.next((e) => e.event === "withdraw" && e.data.id === id);
     expect(added).toBeTruthy();
-    // The withdrawn exhibit's content is gone, so its addition isn't replayed.
+    // The withdrawn exhibit's content is gone, so its addition isn't replayed,
+    // and the withdrawal carries the cabinet's real count rather than asking
+    // the tab to subtract one it never added.
     expect(late.seen.some((e) => e.event === "add" && e.data.id === id)).toBe(false);
+    const shown = (await page("/")).doc.querySelector('.cabinet[data-cabinet="10-plus"] .count')!;
+    expect(added.data.count).toBe(Number(shown.getAttribute("data-count")));
     late.close();
 
     const other = await published(await newHand());
@@ -452,6 +456,20 @@ group("threads, reports and comparison", () => {
     expect((await report(reporter)).status).toBe(201);
     expect(((await (await report(reporter)).json()) as { reported: string }).reported).toBe("already");
     expect((await report(await newHand(), "nonsense")).status).toBe(400);
+    for (const body of ["null", "[]", "{", '"spam"']) {
+      const res = await fetch(url(`/api/exhibits/${id}/report`), {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Cookie: reporter },
+        body,
+      });
+      expect(res.status, body).toBe(400);
+    }
+    const bigWithdraw = await fetch(url(`/api/exhibits/${id}/withdraw`), {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Cookie: reporter },
+      body: "x".repeat(20_000),
+    });
+    expect(bigWithdraw.status).toBe(413);
     const { status, doc } = await page(objectPath(id));
     expect(status).toBe(200);
     expect(doc.querySelector(".reported")).not.toBeNull();

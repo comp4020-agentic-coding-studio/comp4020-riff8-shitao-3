@@ -23,7 +23,6 @@ const preview = $(".exhibit-preview");
 const previewBody = $(".preview-body");
 const publishBtn = $(".publish");
 const publishStatus = $(".publish-status");
-const canPublish = main.dataset.canPublish === "true";
 
 const chosen = (name) => form.querySelector(`input[name="${name}"]:checked`)?.value ?? "";
 const chosenText = (name) => form.querySelector(`input[name="${name}"]:checked`)?.closest("label")?.textContent.trim() ?? "";
@@ -229,13 +228,13 @@ function showPreview() {
   const article = el("article", "exhibit");
   article.append(art, text);
   previewBody.replaceChildren(article, measures);
-  publishStatus.textContent = canPublish ? "" : "You can publish once your 24 hours are up; the draft will wait here.";
+  publishStatus.textContent = "";
   preview.hidden = false;
   preview.focus();
 }
 
 async function publish() {
-  if (!previewed || !canPublish) return;
+  if (!previewed) return;
   token ??= crypto.randomUUID();
   saveDraft();
   publishBtn.disabled = true;

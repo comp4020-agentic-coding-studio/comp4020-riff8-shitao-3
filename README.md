@@ -149,9 +149,10 @@ widths per second, the share of drawing time spent paused, and turning over
 same input method are compared, since a mouse and a finger move
 differently; ties go to the older exhibit; a match only counts if the
 distance is 0.2 or less, and otherwise the page says honestly that nothing
-moves closely enough yet. Neither thread ever leads to the exhibit itself,
-to another exhibit by the same hand, or to one by the person looking, and
-none of that exclusion is visible.
+moves closely enough yet. Neither thread ever leads to the exhibit itself
+or to one by the person looking. They don't skip other exhibits by the
+same hand: which exhibit a thread jumped over would itself say who made
+what.
 
 Opening a thread shows the pair side by side with the reason they were
 paired ("Both were kept for connection", "Both sketches have similar pause

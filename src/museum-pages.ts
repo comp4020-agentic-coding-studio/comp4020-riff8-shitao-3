@@ -368,7 +368,7 @@ export function contributePage(opts: { msUntilNext: number; pen: Pen; colour: st
   return layout(
     `Add an exhibit · ${TITLE}`,
     `    ${header("contribute")}
-    <main id="contribute" data-can-publish="${waiting ? "false" : "true"}">
+    <main id="contribute">
       <h1>Add an exhibit</h1>
       <p class="invitation">${INVITATION}</p>
       <p>Choose an object you own, or remember keeping. Draw it, say why you kept it, preview the whole exhibit, then publish it. Nothing leaves this browser until you press Publish.</p>
@@ -430,7 +430,7 @@ export function contributePage(opts: { msUntilNext: number; pen: Pen; colour: st
             <p class="public-note"><strong>Everything shown here will be public:</strong> the drawing, its label and story, and the trace seal measured from how you drew it. It won't carry your name, and only this browser will know it's yours.</p>
             <div class="preview-body"></div>
             <div class="publish-row">
-              <button type="button" class="publish"${waiting ? " disabled" : ""}>Publish to the museum</button>
+              <button type="button" class="publish">Publish to the museum</button>
               <button type="button" class="keep-editing">Keep editing</button>
             </div>
             <p class="publish-status" role="status" aria-live="polite"></p>

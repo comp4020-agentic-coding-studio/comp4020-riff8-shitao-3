@@ -30,9 +30,8 @@ const say = (text) => {
 
 // --- Shelves. ---
 
-function setCount(cabinet, delta) {
+function setCount(cabinet, n) {
   for (const count of document.querySelectorAll(`.cabinet[data-cabinet="${cabinet}"] .count`)) {
-    const n = Math.max(0, Number(count.dataset.count) + delta);
     count.dataset.count = String(n);
     count.textContent = `${n} ${n === 1 ? "object" : "objects"}`;
   }
@@ -65,7 +64,7 @@ for (const card of document.querySelectorAll(".exhibit-card")) {
 
 function addCard(data) {
   if (main.id !== "museum") return;
-  setCount(data.cabinet, 1);
+  setCount(data.cabinet, data.count);
   // A paged cabinet view only counts arrivals; its own pages stay put.
   if (main.dataset.paged === "true") return;
   const shelf = document.querySelector(`.cabinet[data-cabinet="${data.cabinet}"] .shelf`);
@@ -97,7 +96,7 @@ function removeCard(data) {
     return;
   }
   if (main.id !== "museum") return;
-  setCount(data.cabinet, -1);
+  setCount(data.cabinet, data.count);
   document.querySelector(`.exhibit-card[data-id="${data.id}"]`)?.remove();
 }
 

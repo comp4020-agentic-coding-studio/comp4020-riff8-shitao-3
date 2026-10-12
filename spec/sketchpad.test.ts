@@ -128,6 +128,16 @@ it("ends a stroke when the page is hidden, so hidden time never counts", () => {
   expect(describe(pad.strokes).activeMs).toBe(100);
 });
 
+it("ends a stroke whose pointer lifts outside the frame", () => {
+  const { window, pad, pointer, at, tick } = setup();
+  pointer("pointerdown", ...at(100, 100));
+  tick(50);
+  pointer("pointermove", ...at(300, 100));
+  window.dispatchEvent(new window.PointerEvent("pointerup", { clientX: 2000, clientY: 2000, pointerId: 1, bubbles: true }));
+  expect(pad.drawing).toBe(false);
+  expect(pad.strokes).toHaveLength(1);
+});
+
 it("ignores a second finger while one is drawing", () => {
   const { pad, pointer, at, tick } = setup();
   pointer("pointerdown", ...at(100, 100));

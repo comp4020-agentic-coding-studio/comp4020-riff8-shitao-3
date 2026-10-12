@@ -146,7 +146,9 @@ export function createSketchPad(svg, options = {}) {
     const point = toDrawing(evt);
     if (point) record(point);
   });
-  svg.addEventListener("pointerup", (evt) => {
+  // On the window, not the frame: if capture was refused, a pointer lifted
+  // outside the frame still ends its stroke.
+  win.addEventListener("pointerup", (evt) => {
     if (!active || evt.pointerId !== active.pointerId) return;
     const point = toDrawing(evt);
     if (point) record(point, true);
@@ -154,7 +156,7 @@ export function createSketchPad(svg, options = {}) {
   });
   // The OS took the pointer (a scroll, a system gesture): nothing was
   // meant, so nothing is kept.
-  svg.addEventListener("pointercancel", (evt) => {
+  win.addEventListener("pointercancel", (evt) => {
     if (active && evt.pointerId === active.pointerId) end(false);
   });
 

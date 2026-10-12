@@ -202,8 +202,12 @@ let pumped = latestSeq();
 
 function frames(event: MuseumEvent): ((handId: string | undefined) => string) | null {
   const head = `id: ${event.seq}\nevent: ${event.kind}\ndata: `;
+  // The cabinet's count as it stands now, so a tab sets it rather than
+  // adding or subtracting: a replay that skips a since-withdrawn addition
+  // but still delivers its withdrawal can't push the count out of step.
+  const count = cabinetCounts()[event.cabinet] ?? 0;
   if (event.kind === "withdraw") {
-    const data = JSON.stringify({ seq: event.seq, id: event.exhibit_id, cabinet: event.cabinet });
+    const data = JSON.stringify({ seq: event.seq, id: event.exhibit_id, cabinet: event.cabinet, count });
     return () => `${head}${data}\n\n`;
   }
   const exhibit = getExhibit(event.exhibit_id);
@@ -212,6 +216,7 @@ function frames(event: MuseumEvent): ((handId: string | undefined) => string) | 
     seq: event.seq,
     id: exhibit.id,
     cabinet: exhibit.duration,
+    count,
     accession: accession(exhibit.id),
     html: exhibitCard(exhibit),
   };
@@ -255,7 +260,9 @@ async function readFields(req: IncomingMessage): Promise<{ form: boolean; body: 
   const raw = await readBody(req, 10_000);
   const form = (req.headers["content-type"] ?? "").startsWith("application/x-www-form-urlencoded");
   if (form) return { form, body: Object.fromEntries(new URLSearchParams(raw)) };
-  return { form, body: raw ? (JSON.parse(raw) as Record<string, unknown>) : {} };
+  const parsed: unknown = raw ? JSON.parse(raw) : {};
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("not an object");
+  return { form, body: parsed as Record<string, unknown> };
 }
 
 const server = createServer(async (req, res) => {
@@ -522,7 +529,13 @@ const server = createServer(async (req, res) => {
     if (withdrawMatch) {
       const hand = ensureHand(req, res);
       const id = Number(withdrawMatch[1]);
-      await readBody(req, 10_000);
+      try {
+        await readBody(req, 10_000);
+      } catch {
+        res.setHeader("Connection", "close");
+        json(res, 413, { error: "That request is too large." });
+        return;
+      }
       const form = (req.headers["content-type"] ?? "").startsWith("application/x-www-form-urlencoded");
       if (!withdrawExhibit(id, hand.id)) {
         log("exhibit.withdraw-refused", hand, `object=${pad(id)}`);

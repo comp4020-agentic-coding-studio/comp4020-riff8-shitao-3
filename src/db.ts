@@ -282,23 +282,23 @@ export function ownedExhibitIds(handId: string): Set<number> {
   return new Set((ownedStmt.all(handId) as unknown as { id: number }[]).map((r) => r.id));
 }
 
-// The two threads. Both skip the exhibit itself, hidden exhibits, and any
-// other exhibit by the same hand as either this exhibit or the viewer, so
-// a thread never quietly groups one person's objects together.
+// The two threads. Both skip the exhibit itself, hidden exhibits, and the
+// viewer's own exhibits. They don't skip other exhibits by this exhibit's
+// owner: which exhibit a thread jumped over would say who made it.
 const sameReasonStmt = db.prepare(`
   SELECT * FROM exhibits
-  WHERE reason = :reason AND hidden = 0 AND id != :id AND hand_id != :owner AND hand_id != :viewer
+  WHERE reason = :reason AND hidden = 0 AND id != :id AND hand_id != :viewer
   ORDER BY CASE WHEN id > :id THEN 0 ELSE 1 END, id
   LIMIT 1`);
 const similarGestureStmt = db.prepare(`
   SELECT *, (f_speed - :s) * (f_speed - :s) + (f_pause - :p) * (f_pause - :p) + (f_turn - :t) * (f_turn - :t) AS d2
   FROM exhibits
-  WHERE input = :input AND hidden = 0 AND id != :id AND hand_id != :owner AND hand_id != :viewer
+  WHERE input = :input AND hidden = 0 AND id != :id AND hand_id != :viewer
   ORDER BY d2, id
   LIMIT 1`);
 
 export function sameReason(exhibit: Exhibit, viewer: string): Exhibit | undefined {
-  return sameReasonStmt.get({ reason: exhibit.reason, id: exhibit.id, owner: exhibit.hand_id, viewer }) as unknown as
+  return sameReasonStmt.get({ reason: exhibit.reason, id: exhibit.id, viewer }) as unknown as
     | Exhibit
     | undefined;
 }
@@ -310,7 +310,6 @@ export function similarGesture(exhibit: Exhibit, viewer: string): (Exhibit & { d
     t: exhibit.f_turn,
     input: exhibit.input,
     id: exhibit.id,
-    owner: exhibit.hand_id,
     viewer,
   }) as unknown as (Exhibit & { d2: number }) | undefined;
 }
