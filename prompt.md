@@ -1,3 +1,11 @@
+## Core Directive: The "Plenty" Paradigm Pivot
+
+**Crucial Context:** The codebase you are working in is **not** the game "Plenty." It is an existing, separate project. We are executing a major pivot to transform our current game so that it adopts the mechanics, progression, tone, and UI philosophy of "Plenty."
+
+Whenever this brief refers to "Plenty" or its existing features, treat it as the **target design paradigm** rather than our current state. Your objective is to map these requested mechanics—the earned datacentre, factory supply chains, terrain variance, narrative prologue, and UI U/X overhaul—onto our existing architecture. Evaluate our current systems and refactor, replace, or build new foundations as necessary to achieve this specific vision.
+
+---
+
 # The datacentre is earned, the factory is lived with, and the world expands
 
 ## What we want
